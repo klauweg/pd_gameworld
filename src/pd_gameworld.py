@@ -1,12 +1,21 @@
-import discord
+from discord.ext import commands
+from discord.utils import get
 
-client = discord.Client()
+bot = commands.Bot(command_prefix='!pd')
 
-@client.event
+
+channel = bot.get_channel(741965363549569034)
+
+
+@bot.event
 async def on_member_join(member):
-    channel = client.get_channel(741965363549569034)
     await channel.send(f"""Welcome to the Server {member.mention} !""")
+    role = get(member.server.roles, id="741836468674101270")
+    await bot.add_roles(member, role)
 
-client.run("NzQyMDMyMDAzMTI1MzQ2MzQ0.XzANJw.M_1EwGyle3wi9d3yc4JzFqcENcY")
+
+
+
+bot.run("NzQyMDMyMDAzMTI1MzQ2MzQ0.XzANJw.M_1EwGyle3wi9d3yc4JzFqcENcY")
 
 
