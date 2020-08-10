@@ -1,4 +1,5 @@
 from discord.ext import commands
+from tictactoe.GameLogic import GameLogic
 import discord
 bot = commands.Bot(command_prefix="!pd")
 
@@ -10,4 +11,5 @@ async def on_member_join(member: discord.Member):
     await member.add_roles(role)
     await channel.send(f"""Welcome to the Server {member.mention} !""")
 
+bot.add_cog(GameLogic(bot))
 bot.run("NzQyMDMyMDAzMTI1MzQ2MzQ0.XzANJw.M_1EwGyle3wi9d3yc4JzFqcENcY")
