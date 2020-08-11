@@ -1,10 +1,9 @@
-from src.connectfour.Game import Game
+from src.connectfour import Game
 from discord.ext import commands
 import discord
-from discord.ext.commands import CommandNotFound
 
 
-class Gamelogic(commands.Cog):
+class ConnectFourGameLogic(commands.Cog):
     def __init__(self, botvar):
         self.games = []
         self.channelids = [
