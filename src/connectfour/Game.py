@@ -1,5 +1,4 @@
 import numpy as np
-import discord
 from discord.ext import commands
 
 class Game(commands.Cog):

@@ -16,7 +16,7 @@ class ConnectFourGameLogic(commands.Cog):
         self.joinchannel = 742407492520378418
 
     #Is a Channel id availible to play?
-    def get_availible_channel_id(self):
+    async def get_availible_channel_id(self):
         freechannels = self.channelids
         for gameobject in self.games:
             freechannels.remove(gameobject.channelid)
@@ -25,43 +25,56 @@ class ConnectFourGameLogic(commands.Cog):
         else:
             return False
 
-    def add_to_queue(self, member):
+    async def add_to_queue(self, member):
         self.queue.append(member)
-        self.check_for_gamestart()
+        await self.check_for_gamestart()
 
     #After a player join or a game finsihed do this function
-    def check_for_gamestart(self):
+    async def check_for_gamestart(self):
         while(len(self.queue) > 1):
-            channelid = self.get_availible_channel_id()
+            channelid = await self.get_availible_channel_id()
             if not channelid == False:
                 gameplayers = [self.queue.pop(0), self.queue.pop(1)]
                 gameobject = Game(gameplayers, channelid, self.bot)
                 self.bot.add_cog(gameobject)
                 self.games.append(gameobject)
-                # TODO: Send Message to the 2 players in wich channel they play (get channel name by channel id)
+                embed = discord.Embed(title="You can play now!", description="Your are Playing in Channel **" + self.bot.get_channel(channelid).name + "** !", color=0x2dff32)
+                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_footer(text="Thanks for Playing!")
+                channel = self.bot.get_channel(self.joinchannel)
+                await channel.send(embed=embed)
                 break
             else:
-                # TODO: Send Message in chat that at the moment there is no free channel to play
+                embed = discord.Embed(title="Oh no!",description="There are enough players in the queue but at the moment there is no free channel to play! Sry!",color=0xff812d)
+                embed.set_author(name="ConnectFour", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.add_field(name="Can i change this?",value="You can report in the report channel that it can sometimes take a long time to start a new game",inline=True)
+                embed.set_footer(text="Thanks for Playing!")
+                channel = self.bot.get_channel(self.joinchannel)
+                await channel.send(embed=embed)
                 return
-        # TODO: Send Message to all left player in queue that they have to wait...
+        embed = discord.Embed(title="Oh No!",description=" Sorry but at the moment only you play! Please be patient and wait for a second player",color=0xff6d0d)
+        embed.set_author(name="ConnectFour", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        channel = self.bot.get_channel(self.joinchannel)
+        await channel.send(embed=embed)
 
     @commands.command()
     async def connectfour(self, ctx: discord.ext.commands.Context, *, member: discord.Member = None):
+        await self.add_to_queue(member)
         member = member or ctx.author
         commandchannel = ctx.channel
         if(commandchannel.id == self.joinchannel):
-            self.add_to_queue(member)
             embed = discord.Embed(title="Nice!", description=f"""{member.display_name} Joined the Queue""", color=0x49ff35)
-            embed.set_author(name="ConnectFour")
+            embed.set_author(name="ConnectFour", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             embed.add_field(name="But:", value="It may take a moment for the game to start, so sit back and relax", inline=False)
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             queueplayernames = ""
             for member in self.queue:
                 queueplayernames = queueplayernames + (member.display_name + " ")
             embed.add_field(name="Queue:", value=queueplayernames, inline=False)
             embed.set_footer(text="Thanks vor Playing!")
-            message = await ctx.channel.send(embed=embed)
-            emoji = '\N{THUMBS UP SIGN}'
-            await message.add_reaction(emoji)
+            await ctx.channel.send(embed=embed)
 
 
 

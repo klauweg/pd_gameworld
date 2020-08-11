@@ -1,8 +1,8 @@
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 from src.connectfour.Gamelogic import ConnectFourGameLogic
-from tictactoe.GameLogic import TicTacToeGameLogic
-client = commands.Bot(command_prefix="!pd")
+from src.tictactoe.GameLogic import TicTacToeGameLogic
+client = commands.Bot(command_prefix="!")
 
 
 @client.event
@@ -18,7 +18,7 @@ async def on_command_error(ctx, error):
 
 client.add_cog(ConnectFourGameLogic(client))
 client.add_cog(TicTacToeGameLogic(client))
-token_file = open("../resources/privates.txt")
+token_file = open("resurces/privates.txt")
 client.run(token_file.readline())
 
 
