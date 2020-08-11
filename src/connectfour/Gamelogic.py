@@ -4,7 +4,7 @@ import discord
 
 
 class ConnectFourGameLogic(commands.Cog):
-    def __init__(self, botvar):
+    def __init__(self, bot):
         self.games = []
         self.channelids = [
             742406934317236346,
@@ -12,7 +12,7 @@ class ConnectFourGameLogic(commands.Cog):
             742407072125157377
         ]
         self.queue = []
-        self.bot = botvar
+        self.bot = bot
         self.joinchannel = 742407492520378418
 
     #Is a Channel id availible to play?
