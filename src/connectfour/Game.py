@@ -81,6 +81,7 @@ class Game(commands.Cog):
                         self.insert_selected(self.gamefield, row, col, self.aktplayer)
                     if self.check_state(self.gamefield, self.aktplayer) == False:
                         # TODO: SEND MESSAGE TO PLAYERS THAT A PLAYER WON AND KICK THEM OUT OF THE GAME
+                        # TODO: DELETE GAME MESSAGE TO PREVENT SO MANY MESSAGES
                         print(self.players[self.aktplayer].display_name + " won the Game!")
                         return
 

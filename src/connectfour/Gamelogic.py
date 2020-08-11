@@ -61,8 +61,8 @@ class ConnectFourGameLogic(commands.Cog):
 
     @commands.command()
     async def connectfour(self, ctx: discord.ext.commands.Context, *, member: discord.Member = None):
+        member = ctx.author or member
         await self.add_to_queue(member)
-        member = member or ctx.author
         commandchannel = ctx.channel
         if(commandchannel.id == self.joinchannel):
             embed = discord.Embed(title="Nice!", description=f"""{member.display_name} Joined the Queue""", color=0x49ff35)
