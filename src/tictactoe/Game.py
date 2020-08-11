@@ -31,9 +31,9 @@ class Game:
         diagonal_right = self.placedFields[6] + self.placedFields[4] + self.placedFields[2]
         diagonal_left = self.placedFields[8] + self.placedFields[4] + self.placedFields[0]
         # winner check
-        if on_top is 3 or below is 3 or left is 3 or right is 3 or diagonal_right is 3 or diagonal_left:
+        if on_top == 3 or below == 3 or left == 3 or right == 3 or diagonal_right == 3 or diagonal_left:
             return 1
-        if on_top is 0 or below is 0 or left is 0 or right is 0 or diagonal_right is 0 or diagonal_left:
+        if on_top == 0 or below == 0 or left == 0 or right == 0 or diagonal_right == 0 or diagonal_left:
             return 0
 
         return -1

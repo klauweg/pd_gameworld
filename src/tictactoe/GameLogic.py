@@ -4,7 +4,7 @@ import queue
 import discord
 
 
-class GameLogic(commands.Cog):
+class TicTacToeGameLogic(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.queue = queue.Queue()
