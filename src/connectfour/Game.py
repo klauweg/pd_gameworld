@@ -3,11 +3,11 @@ from discord.ext import commands
 
 class Game(commands.Cog):
 
-    def __init__(self, playerlist, cid, botvar):
+    def __init__(self, playerlistids, cid, botvar):
         self.row_count = 6
         self.column_count = 7
         self.turn = 2
-        self.players = playerlist
+        self.playerids = playerlistids
         self.channelid = cid
         self.bot = botvar
         self.gamefield = np.zeros((self.row_count, self.column_count))
@@ -62,7 +62,7 @@ class Game(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, payload):
         if payload.channel_id == self.channelid:
-            if payload.user_id == self.players[self.aktplayer].id:
+            if payload.user_id == self.playerids[self.aktplayer]:
 
                 emojis = {
                     "68546f5fc3b2166f42cf90b7e23c5ae9" : 0,
@@ -82,7 +82,7 @@ class Game(commands.Cog):
                     if self.check_state(self.gamefield, self.aktplayer) == False:
                         # TODO: SEND MESSAGE TO PLAYERS THAT A PLAYER WON AND KICK THEM OUT OF THE GAME
                         # TODO: DELETE GAME MESSAGE TO PREVENT SO MANY MESSAGES
-                        print(self.players[self.aktplayer].display_name + " won the Game!")
+                        print(self.bot.get_user(self.playerids[self.aktplayer]).display_name + " won the Game!")
                         return
 
                 await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id).remove_reaction(payload.emoji, self.bot.get_user(payload.user_id))
