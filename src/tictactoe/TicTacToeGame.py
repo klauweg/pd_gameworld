@@ -1,13 +1,12 @@
-import discord
+from GameAPI.Game import Game
 
 
-class Game:
+class TicTacToeGame(Game):
     def __init__(self, players):
-        self.players: list = players
-        self.currentPlayer = None
+        self.players = players
         self.fields = {
             "A1": 0, "B1": 1, "C1": 2,
-            "A2": 3, "B2": 4, "C3": 5,
+            "A2": 3, "B2": 4, "C2": 5,
             "A3": 6, "B3": 7, "C3": 8
         }
         self.placedFields = {
@@ -17,10 +16,7 @@ class Game:
         }
 
     def is_empty(self):
-        if self.players is None:
-            return True
-        else:
-            return False
+        return self.players.__len__() == 0
 
     def compute_winner(self):
         # winning possibilities
@@ -31,7 +27,6 @@ class Game:
         diagonal_right = self.placedFields[6] + self.placedFields[4] + self.placedFields[2]
         diagonal_left = self.placedFields[8] + self.placedFields[4] + self.placedFields[0]
         # winner check
-        print(on_top, below, left, right, diagonal_left, diagonal_right)
         if on_top == 6 or below == 6 or left == 6 or right == 6 or diagonal_right == 6 or diagonal_left == 6:
             return 1
         elif on_top == 3 or below == 3 or left == 3 or right == 3 or diagonal_right == 3 or diagonal_left == 3:
@@ -40,7 +35,7 @@ class Game:
             return -1
 
 
-emptyGame = Game(None)
+emptyGame = TicTacToeGame(None)
 
 
 def get_empty_game():
