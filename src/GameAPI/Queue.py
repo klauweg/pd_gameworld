@@ -6,7 +6,9 @@ class Queue:
         self.queue.append(item)
 
     def get(self):
-        return self.queue[self.queue.__len__() - 1]
+        return_value = self.queue[0]
+        self.remove(self.queue[0])
+        return return_value
 
     def remove(self, value):
         self.queue.remove(value)

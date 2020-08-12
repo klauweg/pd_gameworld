@@ -4,10 +4,10 @@ class Game:
         self.currentPlayer = None
         self.currentPlayerID = 0
 
-    def start(self):
+    def start(self, gameChannel):
         pass
 
-    def stop(self):
+    def stop(self, gameChannel):
         pass
 
     def change_to_next_player(self):
