@@ -1,17 +1,17 @@
 from discord.ext import commands
-from tictactoe import Game
-import queue
+from tictactoe import TicTacToeGame
+from GameAPI.Queue import Queue
 import discord
 
 
 class TicTacToeGameLogic(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.queue = queue.Queue()
+        self.queue: Queue = Queue()
         self.channels_in_use = {
-            741830852689920050: Game.get_empty_game(),
-            741831083108204604: Game.get_empty_game(),
-            741831127723147355: Game.get_empty_game()
+            741830852689920050: TicTacToeGame.get_empty_game(),
+            741831083108204604: TicTacToeGame.get_empty_game(),
+            741831127723147355: TicTacToeGame.get_empty_game()
         }
         self.inviteChannel = 741835475085557860
         self.get_free_channel()
@@ -20,12 +20,13 @@ class TicTacToeGameLogic(commands.Cog):
     async def tictactoe(self, ctx: commands.Context):
         if ctx.channel.id is not self.inviteChannel and ctx.author.bot is True:
             return
-        # if ctx.author.id in self.queue:
-        #     return
+        if self.queue.__contains__(ctx.author.id):
+            self.queue.remove(ctx.author.id)
+            return
         channel: discord.TextChannel = self.bot.get_channel(self.get_free_channel())
         if channel is not None:
-            if self.queue.qsize() >= 1:
-                game = Game.Game([ctx.author.id, self.queue.get_nowait()])
+            if self.queue.__len__() >= 1:
+                game = TicTacToeGame.TicTacToeGame([ctx.author.id, self.queue.get()])
                 game.currentPlayer = game.players[0]
                 self.channels_in_use[channel.id] = game
                 embed = discord.Embed(title="A game was found", description="Your game takes place in channel " +
@@ -46,7 +47,7 @@ class TicTacToeGameLogic(commands.Cog):
                 await channel.purge(limit=100)
                 await channel.send(await self.build_board(game.placedFields))
             else:
-                self.queue.put_nowait(ctx.author.id)
+                self.queue.put(ctx.author.id)
                 embed = discord.Embed(title="You joined the queue.",
                                       description="Please wait a moment until a channel becomes free or another player "
                                                   "joins the queue", color=0x44df30)
@@ -59,7 +60,7 @@ class TicTacToeGameLogic(commands.Cog):
                                         "/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 await ctx.send(embed=embed)
         else:
-            self.queue.put_nowait(ctx.author.id)
+            self.queue.put(ctx.author.id)
             embed = discord.Embed(title="You joined the queue.",
                                   description="Please wait a moment until a channel becomes free or another player "
                                               "joins the queue", color=0x44df30)
@@ -76,7 +77,7 @@ class TicTacToeGameLogic(commands.Cog):
     def get_free_channel(self):
         free_channels: list = []
         for x in self.channels_in_use:
-            if self.channels_in_use[x] is Game.get_empty_game():
+            if self.channels_in_use[x] is TicTacToeGame.get_empty_game():
                 free_channels.append(x)
         if free_channels.__len__() == 0:
             return None
@@ -120,10 +121,7 @@ class TicTacToeGameLogic(commands.Cog):
                                 await channel.send(embed=embed)
                                 await self.stopGame(channel.id)
                                 return
-                            if game.players.index(game.currentPlayer) == 1:
-                                game.currentPlayer = game.players[0]
-                            elif game.players.index(game.currentPlayer) == 0:
-                                game.currentPlayer = game.players[1]
+                            game.change_to_next_player()
                             self.channels_in_use[channel.id] = game
                     else:
                         embed = discord.Embed(title=":loudspeaker: The Field is not valid :loudspeaker:",
@@ -134,14 +132,16 @@ class TicTacToeGameLogic(commands.Cog):
                 else:
                     embed = discord.Embed(title=":loudspeaker: It is not your turn :loudspeaker:",
                                           colour=discord.Colour.red())
-                    await channel.send(embed=embed)
+                    await channel.send(embed=embed, delete_after=10)
+                    await message.delete(delay=10)
             else:
                 embed = discord.Embed(title=":loudspeaker: You aren't a player of this game. :loudspeaker:",
                                       colour=discord.Colour.red())
-                await channel.send(embed=embed)
+                await channel.send(embed=embed, delete_after=10)
+                await message.delete(delay=10)
 
     async def stopGame(self, channel_id):
-        self.channels_in_use[channel_id] = Game.get_empty_game()
+        self.channels_in_use[channel_id] = TicTacToeGame.get_empty_game()
         channel: discord.TextChannel = self.bot.get_channel(channel_id)
         await channel.purge()
         embed = discord.Embed(title="No game running",

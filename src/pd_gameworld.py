@@ -1,7 +1,7 @@
 from discord.ext import commands
 from connectfour.Gamelogic import ConnectFourGameLogic
 from tictactoe.GameLogic import TicTacToeGameLogic
-client = commands.Bot(command_prefix="!pd")
+client = commands.Bot(command_prefix="!")
 
 
 @client.event
