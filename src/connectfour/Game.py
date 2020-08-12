@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 import numpy as np
 from discord.ext import commands
@@ -11,9 +13,9 @@ class ConnectFourGame(commands.Cog):
         self.turn = 2
         self.playerids = playerlistids
         self.channelid = cid
-        self.bot = botvar
+        self.bot: commands.Bot = botvar
         self.gamefield = gamefield
-        self.aktplayer = 0
+        self.aktplayer = 1
         self.gamefield_message: discord.Message = message
 
     async def insert_selected(self, row, col, playerindex):
@@ -56,33 +58,41 @@ class ConnectFourGame(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, user):
         if payload.message.id == self.gamefield_message.id:
-            if user.id == self.playerids[self.aktplayer]:
-
-                emojis = {
-                    "1️⃣": 0,
-                    '2️⃣': 1,
-                    '3️⃣': 2,
-                    '4️⃣': 3,
-                    '5️⃣': 4,
-                    '6️⃣': 5,
-                    "7️⃣": 6
-                }
-
-                col = emojis[payload.emoji]
-                if(col != None):
-                    if await self.is_location_valid(col):
-                        row = await self.get_next_row(col)
-                        await self.insert_selected(row, col, self.aktplayer)
-                        await self.print_gamefield()
-                    if not await self.check_state(self.aktplayer):
-                        # TODO: SEND MESSAGE TO PLAYERS THAT A PLAYER WON AND KICK THEM OUT OF THE GAME
-                        # TODO: DELETE GAME MESSAGE TO PREVENT SO MANY MESSAGES
-                        print(self.bot.get_user(self.playerids[self.aktplayer]).display_name + " won the Game!")
-                        return
-
+            if user.id in self.playerids:
                 await self.gamefield_message.remove_reaction(payload.emoji, self.bot.get_user(user.id))
+                if user.id == self.playerids[self.aktplayer]:
+                    emojis = {
+                        "1️⃣": 0,
+                        '2️⃣': 1,
+                        '3️⃣': 2,
+                        '4️⃣': 3,
+                        '5️⃣': 4,
+                        '6️⃣': 5,
+                        "7️⃣": 6
+                    }
+
+                    col = emojis[payload.emoji]
+                    if col != None:
+                        if await self.is_location_valid(col):
+                            row = await self.get_next_row(col)
+                            await self.insert_selected(row, col, self.aktplayer)
+                            await self.print_gamefield()
+                        if not await self.check_state(self.aktplayer):
+                            await self.bot.get_channel(self.channelid).purge()
+                            embed = discord.Embed(title=":tada: " + self.bot.get_user(self.playerids[self.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
+                            await self.bot.get_channel(self.channelid).send(embed=embed, delete_after = 10)
+                            self.bot.remove_cog(self)
+                            return
+
                 self.aktplayer += 1
-                self.aktplayer % self.aktplayer / 2
+                if self.aktplayer == 2:
+                    self.aktplayer = 0
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.channel.id == self.channelid:
+            message.delete()
+
 
 
 

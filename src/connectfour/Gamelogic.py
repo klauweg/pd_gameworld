@@ -36,10 +36,15 @@ class ConnectFourGameLogic(commands.Cog):
         while(len(self.queue) > 1):
             channelid = await self.get_availible_channel_id()
             if not channelid == False:
-                gameplayerids = [self.queue.pop(0),self.queue.pop(0)]
+                gameplayerids = [self.queue.pop(0), self.queue.pop(0)]
                 gamefield = np.zeros((6, 7))
-                embed = discord.Embed(title="You can play now!", description="Your are Playing in Channel **" + self.bot.get_channel(channelid).name + "** !", color=0x2dff32)
+                embed = discord.Embed(title="Game is starting!", description="Playing in Channel: **" + self.bot.get_channel(channelid).name + "** !", color=0x2dff32)
                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_author(name="ConnectFour",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.add_field(name="Players",
+                                value=f"""{self.bot.get_user(gameplayerids[0]).display_name} vs. {self.bot.get_user(gameplayerids[1]).display_name}""",
+                                inline=True)
                 embed.set_footer(text="Thanks for Playing!")
                 channel = self.bot.get_channel(self.joinchannel)
                 await channel.send(embed=embed)
