@@ -4,9 +4,6 @@ import discord
 import numpy as np
 from discord.ext import commands
 
-#import pd_gameworld
-import pd_gameworld
-
 
 class ConnectFourGame(commands.Cog):
 
@@ -58,48 +55,7 @@ class ConnectFourGame(commands.Cog):
                     pass
         return True
 
-    @commands.Cog.listener()
-    async def on_reaction_add(self, payload: discord.Reaction, user):
-        if payload.message.id == self.gamefield_message.id:
-            if user.id in self.playerids:
-                await self.gamefield_message.remove_reaction(payload.emoji, self.bot.get_user(user.id))
-                if user.id == self.playerids[self.aktplayer]:
-                    emojis = {
-                        "1️⃣": 0,
-                        '2️⃣': 1,
-                        '3️⃣': 2,
-                        '4️⃣': 3,
-                        '5️⃣': 4,
-                        '6️⃣': 5,
-                        "7️⃣": 6
-                    }
 
-                    col = emojis[payload.emoji]
-                    if col != None:
-                        if await self.is_location_valid(col):
-                            row = await self.get_next_row(col)
-                            await self.insert_selected(row, col, self.aktplayer)
-                            await self.print_gamefield()
-                        if not await self.check_state(self.aktplayer):
-                            embed = discord.Embed(title=":tada: " + self.bot.get_user(self.playerids[self.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
-                            await self.bot.get_channel(self.channelid).send(embed=embed, delete_after=10)
-                            await asyncio.sleep(5)
-                            await self.bot.get_channel(self.channelid).delete()
-                            pd_gameworld.hangman.games.remove(self)
-                            self.bot.remove_cog(self)
-                            #pd_gameworld.connectfour.games.remove(self)
-                            # TODO: REMOVE GAME FROM GAMESLIST
-                            return
-
-                self.aktplayer += 1
-                if self.aktplayer == 2:
-                    self.aktplayer = 0
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.channel.id == self.channelid:
-            if message.author != self.bot.user:
-                await message.delete()
 
 
 

@@ -130,7 +130,7 @@ class TicTacToeGameLogic(commands.Cog):
                 await message.delete(delay=10)
 
     async def stopGame(self, channel_id):
-        self.channels_in_use[channel_id] = TicTacToeGame.get_empty_game()
+        self.channels_in_use.pop(channel_id)
         channel: discord.TextChannel = self.bot.get_channel(channel_id)
         await channel.delete()
 
