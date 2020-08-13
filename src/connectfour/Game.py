@@ -4,6 +4,8 @@ import discord
 import numpy as np
 from discord.ext import commands
 
+#import pd_gameworld
+
 
 class ConnectFourGame(commands.Cog):
 
@@ -81,6 +83,8 @@ class ConnectFourGame(commands.Cog):
                             await self.bot.get_channel(self.channelid).purge()
                             embed = discord.Embed(title=":tada: " + self.bot.get_user(self.playerids[self.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
                             await self.bot.get_channel(self.channelid).send(embed=embed, delete_after = 10)
+                            #pd_gameworld.connectfour.games.remove(self)
+                            # TODO: REMOVE GAME FROM GAMESLIST
                             self.bot.remove_cog(self)
                             return
 
