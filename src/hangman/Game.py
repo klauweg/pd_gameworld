@@ -1,5 +1,5 @@
-import asyncio
-import random
+import asyncio#
+import pd_gameworld
 
 import discord
 from discord.ext import commands
@@ -58,6 +58,13 @@ class Game(commands.Cog):
         print(print_string)
         return print_string
 
+
+    async def stop(self):
+        await asyncio.sleep(5)
+        pd_gameworld.hangman.games.remove(self)
+        await self.bot.get_channel(self.channelid).delete()
+        self.bot.remove_cog(self)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if self.gamestate == 0:
@@ -81,13 +88,14 @@ class Game(commands.Cog):
                     await self.bot.get_user(self.not_guessing_player_id).send(embed=embed, delete_after=10)
             return
         if message.channel.id == self.channelid and message.author.id != self.not_guessing_player_id and message.author.id in self.playerids:
+            await message.delete()
             if message.author.id is not self.not_guessing_player_id:
                 if message.content.upper() == self.correct_word:
-                    print("won")
-                    # TODO: PRINT WON MESSAGE ETC.
-                    await asyncio.sleep(5)
-                    await self.bot.get_channel(self.channelid).delete()
-                    self.bot.remove_cog(self)
+                    embed = discord.Embed(title="Attention", description="Your word can only contains letters!",color=0xff4646)
+                    embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    await self.bot.get_user(self.not_guessing_player_id).send(embed=embed, delete_after=10)
+                    await self.stop_game()
                 elif self.is_valid_guess(message.content.upper) and not self.has_already_guessed(message.content.upper()):
                     self.guess(message.content)
 

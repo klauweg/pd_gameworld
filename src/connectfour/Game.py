@@ -5,6 +5,7 @@ import numpy as np
 from discord.ext import commands
 
 #import pd_gameworld
+import pd_gameworld
 
 
 class ConnectFourGame(commands.Cog):
@@ -84,6 +85,7 @@ class ConnectFourGame(commands.Cog):
                             await self.bot.get_channel(self.channelid).send(embed=embed, delete_after=10)
                             await asyncio.sleep(5)
                             await self.bot.get_channel(self.channelid).delete()
+                            pd_gameworld.hangman.games.remove(self)
                             self.bot.remove_cog(self)
                             #pd_gameworld.connectfour.games.remove(self)
                             # TODO: REMOVE GAME FROM GAMESLIST

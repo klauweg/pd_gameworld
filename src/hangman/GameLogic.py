@@ -16,7 +16,7 @@ class HangManGameLogic(commands.Cog):
         self.games = []
         self.bot: commands.Bot = bot
         self.queue: Queue = Queue()
-        self.joinchannel = 743386731453087756
+        self.joinchannel = 743463967996903496
         self.timer: Timer = None
 
     #After a player join or a game finsihed do this function
@@ -73,7 +73,6 @@ class HangManGameLogic(commands.Cog):
         await ctx.message.delete()
         commandchannel = ctx.channel
         if commandchannel.id == self.joinchannel:
-
             #if member.id in self.queue:
              #   self.queue.remove(member.id)
              #   embed = discord.Embed(title="See you soon!", description=f"""{member.display_name} left the Queue""",color=0x49ff35)
