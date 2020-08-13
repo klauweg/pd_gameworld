@@ -20,6 +20,12 @@ class Queue:
     def index(self, value):
         return self.queue.index(value)
 
+    def pick(self, count):
+        values = []
+        for x in range(0, count):
+            values.append(self.get())
+        return values
+
     def __len__(self):
         return len(self.queue)
 
