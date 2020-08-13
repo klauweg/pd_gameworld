@@ -9,6 +9,7 @@ verify_ssl = true
 numpy = "*"
 discord = "*"
 pillow = "*"
+pyaml = "*"
 
 [requires]
 python_version = "3.8"

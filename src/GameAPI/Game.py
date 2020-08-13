@@ -12,11 +12,12 @@ class Game:
 
     def change_to_next_player(self):
         self.currentPlayerID += 1
-        if self.currentPlayerID > self.players.__len__() - 1:
+        if self.currentPlayerID > self.players.__len__() -1:
             self.currentPlayerID = 0
             self.currentPlayer = self.players[self.currentPlayerID]
             return self.currentPlayer
         self.currentPlayer = self.players[self.currentPlayerID]
+        print(self.currentPlayerID)
         return self.currentPlayer
 
     def is_empty(self):
