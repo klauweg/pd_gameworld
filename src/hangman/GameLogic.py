@@ -70,7 +70,7 @@ class HangManGameLogic(commands.Cog):
                          icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        await self.bot.get_user(notguessingplayerid).send(embed=embed, delete_after=120)
+        await self.bot.get_channel(channelid).send(embed=embed, delete_after=120)
 
         hangmangame = Game(playerids, channelid, self.bot, notguessingplayerid)
         self.bot.add_cog(hangmangame)
@@ -90,6 +90,7 @@ class HangManGameLogic(commands.Cog):
         font = ImageFont.truetype('../resurces/hangman/arial.ttf', 34)
         arr = io.BytesIO()
         draw.text((9, 51), game.get_print_string(), (0, 0, 0), font=font)
+        draw.text((9, 170), game.loose_level*10+"**/100%**", (0, 0, 0), font=font)
         field_img.save(arr, format="png")
         arr.seek(0)
         file = discord.File(arr)
@@ -156,7 +157,7 @@ class HangManGameLogic(commands.Cog):
                             await game.bot.get_user(game.not_guessing_player_id).send(embed=embed, delete_after=10)
                     else:
                         await message.delete()
-                        game.is_in_action = False
+                    game.is_in_action = False
                     return
                 if message.channel.id == game.channelid and message.author.id is not game.not_guessing_player_id and message.author.id in game.playerids:
                     await message.delete()
