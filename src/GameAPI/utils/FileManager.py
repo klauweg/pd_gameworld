@@ -19,6 +19,7 @@ def get_player_data(userID):
     player_object: dict = json.load(open("../resources/player_data.json", "r+"))
     if str(userID) not in list(player_object.keys()):
         return None
+    player_object = json.load(open("../resources/player_data.json", "r+"))[userID]
     player_stats = Players.PlayerStats()
     player_stats.tictactoe = player_object["TicTacToe"]
     player_stats.connect4 = player_object["Connect4"]
