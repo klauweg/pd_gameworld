@@ -40,6 +40,7 @@ class HangManGameLogic(commands.Cog):
             channelid = await self.get_availible_channel_id()
             if not channelid == False:
                 if self.queue.__len__() == 2:
+                    # TODO: TIMER NOT WORKING
                     self.timer = Timer(60, await self.start_game(self.queue.queue, channelid))
                     self.timer.start()
                     embed = discord.Embed(title="Game is starting...", description="Startet Timer (30 seconds) to allow other players to join in", color=0x58ff46)

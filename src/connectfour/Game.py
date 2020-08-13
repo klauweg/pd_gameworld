@@ -80,12 +80,13 @@ class ConnectFourGame(commands.Cog):
                             await self.insert_selected(row, col, self.aktplayer)
                             await self.print_gamefield()
                         if not await self.check_state(self.aktplayer):
-                            await self.bot.get_channel(self.channelid).purge()
                             embed = discord.Embed(title=":tada: " + self.bot.get_user(self.playerids[self.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
-                            await self.bot.get_channel(self.channelid).send(embed=embed, delete_after = 10)
+                            await self.bot.get_channel(self.channelid).send(embed=embed, delete_after=10)
+                            await asyncio.sleep(5)
+                            await self.bot.get_channel(self.channelid).delete()
+                            self.bot.remove_cog(self)
                             #pd_gameworld.connectfour.games.remove(self)
                             # TODO: REMOVE GAME FROM GAMESLIST
-                            self.bot.remove_cog(self)
                             return
 
                 self.aktplayer += 1
@@ -95,7 +96,8 @@ class ConnectFourGame(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.channel.id == self.channelid:
-            await message.delete()
+            if message.author != self.bot.user:
+                await message.delete()
 
 
 
