@@ -13,6 +13,7 @@ async def on_member_join(member):
 connectfour = ConnectFourGameLogic(client)
 client.add_cog(connectfour)
 client.add_cog(TicTacToeGameLogic(client))
-client.add_cog(HangManGameLogic(client))
+hangman = HangManGameLogic(client)
+client.add_cog(hangman)
 token_file = open("../resources/privates.txt")
 client.run(token_file.readline())
