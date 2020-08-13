@@ -86,7 +86,7 @@ class HangManGameLogic(commands.Cog):
                 embed = discord.Embed(title="See you soon!", description=f"""{member.display_name} left the Queue""",color=0x49ff35)
                 embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                await ctx.channel.send(embed=embed)
+                await ctx.channel.send(embed=embed, delete_after=10)
                 return
 
             embed = discord.Embed(title="Nice!", description=f"""{member.display_name} Joined the Queue""", color=0x49ff35)
@@ -133,7 +133,7 @@ class HangManGameLogic(commands.Cog):
             if message.channel.id == game.channelid and message.author.id is not game.not_guessing_player_id and message.author.id in game.playerids:
                 await message.delete()
                 if message.content.upper() == game.correct_word:
-                    embed = discord.Embed(title=":tada: " + game.bot.get_user(message.author.display_name) + " has guessed the Word! :tada:", description="Thanks for playing!", color=0x58ff46)
+                    embed = discord.Embed(title=":tada: " + game.bot.get_user(message.author.id).display_name + " has guessed the Word! :tada:", description="Thanks for playing!", color=0x58ff46)
                     embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     await game.bot.get_channel(game.channelid).send(embed=embed)
@@ -141,7 +141,7 @@ class HangManGameLogic(commands.Cog):
                     await self.stop(game.channelid)
                 elif game.is_valid_guess(message.content.upper()):
                     if not game.has_already_guessed(message.content.upper()):
-                        await game.guess(message.content)
+                        await game.guess(message.content.upper())
 
                         if game.loose_level == 10:
                             embed = discord.Embed(title="You loose:", description="Hangman was hanged!", color=0x58ff46)

@@ -29,13 +29,6 @@ class ConnectFourGame(commands.Cog):
             if self.gamefield[r][col] == 0:
                 return r
 
-    async def print_gamefield(self):
-        embed = discord.Embed(title="", description=str(np.flip(self.gamefield, 0)), color=discord.Color.green())
-        embed.set_author(name="ConnectFour",
-                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        await self.gamefield_message.edit(embed = embed)
 
     async def check_state(self, piece):
         piece += 1

@@ -20,9 +20,16 @@ class TicTacToeGameLogic(commands.Cog):
     async def tictactoe(self, ctx: commands.Context):
         if ctx.channel.id is not self.inviteChannel and ctx.author.bot is True:
             return
-        # if self.queue.__contains__(ctx.author.id):
-        #     self.queue.remove(ctx.author.id)
-        #     return
+        if self.queue.__contains__(ctx.author.id):
+             self.queue.remove(ctx.author.id)
+             embed = discord.Embed(title="See you soon!", description=f"""{ctx.author.display_name} left the Queue""",
+                                   color=0x49ff35)
+             embed.set_author(name="ConnectFour",
+                              icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+             embed.set_thumbnail(
+                 url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+             await ctx.channel.send(embed=embed)
+             return
         guild: discord.Guild = ctx.guild
 
         if self.queue.__len__() >= 1:
@@ -147,7 +154,7 @@ class TicTacToeGameLogic(commands.Cog):
             if placedFields[x] == 1:
                 field_img.paste(X, fields[list(placedFields).index(x)],X)
             elif placedFields[x] == 2:
-                field_img.paste(o, fields[list(placedFields).index(x)],X)
+                field_img.paste(o, fields[list(placedFields).index(x)],o)
 
         arr = io.BytesIO()
         field_img.save(arr, format="png")

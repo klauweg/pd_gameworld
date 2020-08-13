@@ -1,6 +1,7 @@
 import asyncio
 
 import numpy as np
+from PIL import Image
 
 from connectfour.Game import ConnectFourGame
 from discord.ext import commands
@@ -53,6 +54,15 @@ class ConnectFourGameLogic(commands.Cog):
             await message.add_reaction("7️⃣")
             break
 
+    async  def build_board(self, gamefield: np.matrix):
+        field_img: Image.Image = Image.open("../resources/connectfour/field_universe.png")
+        o = Image.open("../resources/connectfour/o_universe.png")
+
+        X = Image.open("../resources/connectfour/x_universe.png")
+
+        for x in gamefield:
+            print(gamefield)
+
     @commands.command()
     async def connectfour(self, ctx: commands.Context, *, member: discord.Member = None):
         member = ctx.author or member
@@ -103,7 +113,7 @@ class ConnectFourGameLogic(commands.Cog):
                             if await game.is_location_valid(col):
                                 row = await game.get_next_row(col)
                                 await game.insert_selected(row, col, game.aktplayer)
-                                await game.print_gamefield()
+                                self.build_board()
                             if not await game.check_state(game.aktplayer):
                                 embed = discord.Embed(title=":tada: " + game.bot.get_user(game.playerids[game.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
                                 await game.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
