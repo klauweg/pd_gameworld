@@ -138,16 +138,16 @@ class TicTacToeGameLogic(commands.Cog):
         field_img: Image.Image = Image.open("../resources/tictactoe/gamefield_universe.png")
         o = Image.open("../resources/tictactoe/o_universe.png")
 
-        X = Image.open("../resources/tictactoe/X.png")
+        X = Image.open("../resources/tictactoe/x_universe.png")
         fields = [(12, 12), (175, 12), (337, 12),
                   (12, 175), (175, 175), (337, 175),
                   (12, 337), (175, 337), (337, 337)]
 
         for x in list(placedFields.keys()):
             if placedFields[x] == 1:
-                field_img.paste(X, fields[list(placedFields).index(x)])
+                field_img.paste(X, fields[list(placedFields).index(x)],X)
             elif placedFields[x] == 2:
-                field_img.paste(o, fields[list(placedFields).index(x)])
+                field_img.paste(o, fields[list(placedFields).index(x)],X)
 
         arr = io.BytesIO()
         field_img.save(arr, format="png")
