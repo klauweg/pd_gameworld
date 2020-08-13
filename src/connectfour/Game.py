@@ -7,7 +7,7 @@ from discord.ext import commands
 
 class ConnectFourGame(commands.Cog):
 
-    def __init__(self, playerlistids, cid, botvar, message, gamefield):
+    def __init__(self, playerlistids, cid, botvar, gamefield, message):
         self.row_count = 6
         self.column_count = 7
         self.turn = 2
@@ -15,8 +15,9 @@ class ConnectFourGame(commands.Cog):
         self.channelid = cid
         self.bot: commands.Bot = botvar
         self.gamefield = gamefield
+        self.gamefield_message = message
         self.aktplayer = 1
-        self.gamefield_message: discord.Message = message
+        self.is_in_action = False
 
     async def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
@@ -29,13 +30,6 @@ class ConnectFourGame(commands.Cog):
             if self.gamefield[r][col] == 0:
                 return r
 
-    async def print_gamefield(self):
-        embed = discord.Embed(title="", description=str(np.flip(self.gamefield, 0)), color=discord.Color.green())
-        embed.set_author(name="ConnectFour",
-                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        await self.gamefield_message.edit(embed = embed)
 
     async def check_state(self, piece):
         piece += 1
