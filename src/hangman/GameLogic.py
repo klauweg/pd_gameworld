@@ -10,6 +10,7 @@ from GameAPI.Queue import Queue
 
 from threading import Timer
 
+from GameAPI.utils import FileManager
 from hangman.Game import Game
 
 
@@ -164,6 +165,7 @@ class HangManGameLogic(commands.Cog):
                         embed = discord.Embed(title=":tada: " + game.bot.get_user(message.author.id).display_name + " has guessed the Word! :tada:", description="Thanks for playing!", color=0x58ff46)
                         embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        FileManager.update_player_data(message.author.id, "xp",FileManager.get_player_data(message.author.id).xp + 15)
                         await game.bot.get_channel(game.channelid).send(embed=embed)
                         await asyncio.sleep(10)
                         await self.stop(game.channelid)

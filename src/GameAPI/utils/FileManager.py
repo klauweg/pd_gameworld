@@ -8,15 +8,14 @@ def add_player_data(player: Players.Player):
         player_stats: Players.PlayerStats = player.player_stats
         player_object = {player.user_id: {"xp": player.xp, "TicTacToe": player_stats.tictactoe,
                                           "Connect4": player_stats.connect4, "Hangman": player_stats.hangman}}
-        json.dump(player_object, open("../../../resources/player_data.json", "w+"))
+        json.dump(player_object, open("../resources/player_data.json", "w+"))
     else:
         logging.error("[GameAPI] Cant add player that already exists.")
         return
 
 
 def get_player_data(userID):
-    userID = str(userID)
-    player_object = json.load(open("../../../resources/player_data.json", "r+"))[userID]
+    player_object = json.load(open("../resources/player_data.json", "r+"))[str(userID)]
     if player_object is None:
         return None
     player_stats = Players.PlayerStats()
@@ -32,4 +31,4 @@ def update_player_data(userID, field_name: str, new_field_value):
         logging.error("[GameAPI] Player does not exists.")
     player_object = get_player_data(userID).to_json()
     player_object[str(userID)][field_name] = new_field_value
-    json.dump(player_object, open("../../../resources/player_data.json", "r+"))
+    json.dump(player_object, open("../resources/player_data.json", "r+"))
