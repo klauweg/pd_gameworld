@@ -31,8 +31,12 @@ class TicTacToeGame(Game):
             return 1
         elif on_top == 3 or below == 3 or left == 3 or right == 3 or diagonal_right == 3 or diagonal_left == 3:
             return 0
+        elif not list(self.placedFields.values()).__contains__(99):
+            return -2
         else:
             return -1
+
+
 
 
 emptyGame = TicTacToeGame(None)
