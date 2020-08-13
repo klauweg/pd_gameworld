@@ -7,7 +7,7 @@ from discord.ext import commands
 
 class ConnectFourGame(commands.Cog):
 
-    def __init__(self, playerlistids, cid, botvar, message, gamefield):
+    def __init__(self, playerlistids, cid, botvar, gamefield, message):
         self.row_count = 6
         self.column_count = 7
         self.turn = 2
@@ -15,8 +15,9 @@ class ConnectFourGame(commands.Cog):
         self.channelid = cid
         self.bot: commands.Bot = botvar
         self.gamefield = gamefield
+        self.gamefield_message = message
         self.aktplayer = 1
-        self.gamefield_message: discord.Message = message
+        self.is_in_action = False
 
     async def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
