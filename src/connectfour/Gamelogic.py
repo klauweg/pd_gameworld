@@ -1,4 +1,5 @@
 import asyncio
+import io
 
 import numpy as np
 from PIL import Image
@@ -60,8 +61,32 @@ class ConnectFourGameLogic(commands.Cog):
 
         X = Image.open("../resources/connectfour/x_universe.png")
 
-        for x in gamefield:
-            print(gamefield)
+        fields = [[(34, 34),  (184, 34),   (334, 34),  (484, 34), (634, 34),  (784, 34),  (934, 34)],
+                  [(34, 184), (184, 184), (334, 184), (484, 184), (634, 184), (784, 184), (934, 184)],
+                  [(34, 334), (184, 334), (334, 334), (484, 334), (634, 334), (784, 334), (934, 334)],
+                  [(34, 484), (184, 484), (334, 484), (484, 484), (634, 484), (784, 484), (934, 484)],
+                  [(34, 634), (184, 634), (334, 634), (484, 634), (634, 634), (784, 634), (934, 634)],
+                  [(34, 784), (184, 784), (334, 784), (484, 784), (634, 784), (784, 784), (934, 784)]]
+
+        for row in gamefield:
+            for x in row:
+                if gamefield[row][x] == 1:
+                    field_img.paste(X, fields[row][x], X)
+                if gamefield[row][x] == 2:
+                    field_img.paste(o, fields[row][x], o)
+
+        arr = io.BytesIO()
+        field_img.save(arr, format="png")
+        basewidth = 300
+        wpercent = (basewidth/float(field_img.size[0]))
+        hsize = int((float(field_img.size)*float(wpercent)))
+        field_img = field_img.resize((basewidth,hsize), Image.ANTIALIAS)
+        arr = io.BytesIO()
+        field_img.save(arr, format="png")
+        arr.seek(0)
+        file = discord.File(arr)
+        file.filename = "field.png"
+        return file
 
     @commands.command()
     async def connectfour(self, ctx: commands.Context, *, member: discord.Member = None):
@@ -74,7 +99,7 @@ class ConnectFourGameLogic(commands.Cog):
                 embed = discord.Embed(title="See you soon!", description=f"""{member.display_name} left the Queue""",color=0x49ff35)
                 embed.set_author(name="ConnectFour",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                await ctx.channel.send(embed=embed)
+                await ctx.channel.send(embed=embed, delete_after=10)
                 return
             embed = discord.Embed(title="Nice!", description=f"""{member.display_name} Joined the Queue""", color=0x49ff35)
             embed.set_author(name="ConnectFour", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -113,7 +138,7 @@ class ConnectFourGameLogic(commands.Cog):
                             if await game.is_location_valid(col):
                                 row = await game.get_next_row(col)
                                 await game.insert_selected(row, col, game.aktplayer)
-                                self.build_board()
+                                await game.bot.get_channel(game.channelid).send(file=await self.build_board(game.gamefield))
                             if not await game.check_state(game.aktplayer):
                                 embed = discord.Embed(title=":tada: " + game.bot.get_user(game.playerids[game.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
                                 await game.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
