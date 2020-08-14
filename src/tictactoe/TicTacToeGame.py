@@ -14,6 +14,7 @@ class TicTacToeGame(Game):
             3: 99, 4: 99, 5: 99,
             6: 99, 7: 99, 8: 99
         }
+        self.is_working = False
 
     def is_empty(self):
         return self.players.__len__() == 0
