@@ -1,7 +1,4 @@
 import math
-import asyncio
-import discord
-from discord.ext import commands
 
 
 class Player:
@@ -11,7 +8,7 @@ class Player:
         self.player_stats = player_stats
 
     def compute_level(self):
-        level = math.sqrt(self.xp / 10)
+        level = math.ceil(math.sqrt(self.xp / 10))
         return level
 
     def to_json(self):
