@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 
-from GameAPI.utils import FileManager
-from GameAPI.utils.Players import Player, PlayerStats
+from GameAPI.PlayerAPI import FileManager
+from GameAPI.PlayerAPI.Players import Player, PlayerStats
 from bugreport.BugReport import BugReport
 from tictactoe.GameLogic import TicTacToeGameLogic
 from connectfour.Gamelogic import ConnectFourGameLogic
@@ -16,7 +16,8 @@ async def on_member_join(member: discord.Member):
     await channel.send(f"""Welcome to the Server {member.mention} !""")
     player: Player = Player(member.id, 0, PlayerStats())
     FileManager.add_player_data(player)
-    await member.edit(nick=member.display_name + " [Lvl: " + str(FileManager.get_player_data(member.id).compute_level()) + "]")
+    await member.edit(nick=member.display_name + " [Lvl: " + str(
+        FileManager.get_player_data(member.id).compute_level()) + "]")
 
 client.add_cog(TicTacToeGameLogic(client))
 client.add_cog(ConnectFourGameLogic(client))

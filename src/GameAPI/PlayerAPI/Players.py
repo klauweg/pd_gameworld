@@ -19,7 +19,7 @@ class Player:
 class PlayerStats:
     def __init__(self):
         self.total_wins = 0
-        # Stats of all games formatted as (wins, loses, played, win chance)
+        # Stats of all games formatted as (wins, loses, played, w/l)
         self.tictactoe = (0, 0, 0, 0)
         self.connect4 = (0, 0, 0, 0)
         self.hangman = (0, 0, 0, 0)

@@ -1,5 +1,5 @@
 import json
-from GameAPI.utils import Players
+from GameAPI.PlayerAPI import Players
 import logging
 
 
@@ -28,9 +28,18 @@ def get_player_data(userID):
     return player
 
 
+def get_field(userID, field_name):
+    player_object = get_player_data(userID).to_json()
+    return player_object[str(userID)][field_name]
+
+
 def update_player_data(userID, field_name: str, new_field_value):
     if get_player_data(userID) is None:
         logging.error("[GameAPI] Player does not exists.")
     player_object = get_player_data(userID).to_json()
     player_object[str(userID)][field_name] = new_field_value
     json.dump(player_object, open("../resources/player_data.json", "r+"))
+
+
+def exists_player(user_id):
+    return get_player_data(user_id) is not None

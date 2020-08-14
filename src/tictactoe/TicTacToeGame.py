@@ -3,6 +3,7 @@ from GameAPI.Game import Game
 
 class TicTacToeGame(Game):
     def __init__(self, players):
+        super().__init__()
         self.players = players
         self.fields = {
             "A1": 0, "B1": 1, "C1": 2,
