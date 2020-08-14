@@ -91,6 +91,7 @@ class HangManGameLogic(commands.Cog):
         font = ImageFont.truetype('../resurces/hangman/arial.ttf', 34)
         arr = io.BytesIO()
         draw.text((9, 51), game.get_print_string(), (0, 0, 0), font=font)
+        draw.text((9, 170), str(game.loose_level*10) + "/100%", (0, 0, 0), font=font)
         field_img.save(arr, format="png")
         arr.seek(0)
         file = discord.File(arr)
@@ -157,7 +158,7 @@ class HangManGameLogic(commands.Cog):
                             await game.bot.get_user(game.not_guessing_player_id).send(embed=embed, delete_after=10)
                     else:
                         await message.delete()
-                        game.is_in_action = False
+                    game.is_in_action = False
                     return
                 if message.channel.id == game.channelid and message.author.id is not game.not_guessing_player_id and message.author.id in game.playerids:
                     await message.delete()
