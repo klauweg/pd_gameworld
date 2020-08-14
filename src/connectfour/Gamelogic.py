@@ -145,22 +145,25 @@ class ConnectFourGameLogic(commands.Cog):
                                 '6️⃣': 5,
                                 "7️⃣": 6
                             }
-
-                            col = emojis[payload.emoji]
+                            col = None
+                            try:
+                                col = emojis[payload.emoji]
+                            except:
+                                pass
                             if col != None:
                                 if await game.is_location_valid(col):
                                     row = await game.get_next_row(col)
                                     await game.insert_selected(row, col, game.aktplayer)
                                     await self.sendmessage(game)
-
-                                    game.aktplayer += 1
-                                    if game.aktplayer == 2:
-                                        game.aktplayer = 0
                                 if not await game.check_state(game.aktplayer):
                                     embed = discord.Embed(title=":tada: " + game.bot.get_user(game.playerids[game.aktplayer]).display_name + " won :tada:",colour=discord.Colour.green())
                                     await game.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
                                     await asyncio.sleep(5)
                                     await self.stop(game.channelid)
+
+                                game.aktplayer += 1
+                                if game.aktplayer == 2:
+                                    game.aktplayer = 0
 
                         game.is_in_action = False
                     else:

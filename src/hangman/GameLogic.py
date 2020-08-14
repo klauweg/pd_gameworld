@@ -88,10 +88,10 @@ class HangManGameLogic(commands.Cog):
     async def build_board(self, game: Game):
         field_img: Image.Image = Image.open("../resources/hangman/message.png")
         draw = ImageDraw.Draw(field_img)
-        font = ImageFont.truetype('../resurces/hangman/arial.ttf', 34)
+        lfont = ImageFont.truetype('../resurces/hangman/arial.ttf', 30)
         arr = io.BytesIO()
-        draw.text((9, 51), game.get_print_string(), (0, 0, 0), font=font)
-        draw.text((9, 170), str(game.loose_level*10) + "/100%", (0, 0, 0), font=font)
+        draw.text((9, 51), game.get_print_string(), (0, 0, 0), font=lfont)
+        draw.text((9, 170), str(game.loose_level*10) + "/100%", (0, 0, 0), font=lfont)
         field_img.save(arr, format="png")
         arr.seek(0)
         file = discord.File(arr)
@@ -145,7 +145,7 @@ class HangManGameLogic(commands.Cog):
                                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                                 await game.bot.get_user(game.not_guessing_player_id).send(embed=embed, delete_after=10)
 
-                                await game.bot.get_channel(game.channelid).send(file=await self.build_board(game))
+                                game.message = await game.bot.get_channel(game.channelid).send(file=await self.build_board(game))
                             else:
                                 embed = discord.Embed(title="Attention", description="Less than 15 characters!",color=0xff4646)
                                 embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -172,18 +172,24 @@ class HangManGameLogic(commands.Cog):
                         await self.stop(game.channelid)
                     elif game.is_valid_guess(message.content.upper()):
                         if not game.has_already_guessed(message.content.upper()):
+                            await game.message.delete()
                             await game.guess(message.content.upper())
-                            await game.bot.get_channel(game.channelid).send(file=await self.build_board(game))
+                            game.message = await game.bot.get_channel(game.channelid).send(file=await self.build_board(game))
                             if game.loose_level == 10:
                                 embed = discord.Embed(title="You loose:", description="Hangman was hanged!", color=0x58ff46)
                                 embed.set_author(name="Hangman", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                                 await game.bot.get_channel(game.channelid).send(embed=embed)
-                                # TODO: PROGRAMM BLOCKER SO WHEN THE GAME IS FINSIHED BUT NOT DELETED NO ONE CAN INPUT SOMETHING
                                 await asyncio.sleep(10)
                                 await self.stop(game.channelid)
                     game.is_in_action = False
                     return
+                else:
+                    game.is_in_action = False
+                    try:
+                        await message.delete()
+                    except:
+                        return
             else:
                 try:
                     await message.delete()

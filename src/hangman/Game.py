@@ -22,7 +22,7 @@ class Game(commands.Cog):
             self.loose_level += 1
 
     def is_valid_guess(self, string):
-        valid_guesses = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+        valid_guesses = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ö", "Ü", "Ä"]
         if string in valid_guesses:
             return True
         else:
@@ -44,9 +44,9 @@ class Game(commands.Cog):
         print_string = ""
         for char in self.correct_word:
             if self.has_already_guessed(char.upper()):
-                print_string += "[ "+char+" ]"
+                print_string += "["+char+"]"
             else:
-                print_string += "[ ? ]"
+                print_string += "[?]"
         return print_string
 
 
