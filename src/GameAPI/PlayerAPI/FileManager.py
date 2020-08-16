@@ -1,45 +1,31 @@
 import json
-from GameAPI.PlayerAPI import Players
-import logging
+import os.path as path
+
+file_path = "../resources/player_data.json"
 
 
-def add_player_data(player: Players.Player):
-    if get_player_data(player.user_id) is None:
-        player_stats: Players.PlayerStats = player.player_stats
-        player_object = {player.user_id: {"xp": player.xp, "TicTacToe": player_stats.tictactoe,
-                                          "Connect4": player_stats.connect4, "Hangman": player_stats.hangman}}
-        json.dump(player_object, open("../resources/player_data.json", "w+"))
-    else:
-        logging.error("[GameAPI] Cant add player that already exists.")
-        return
+# Der Decorator baut das Laden und Speichern der JSON Datei um die API Funktionen add_xp, add_to_stats und beliebige weitere:
+def json_decorator(api_function):
+    def wrapper(user_id, *args):
+        data = {}
+        if path.isfile(file_path):
+            with open(file_path, "r") as fl:
+                data = json.load(fl)
+        userdata = data.get(user_id, {"xp": 0, "stats": {}})  # Default Value falls User nicht existiert
+        data[user_id] = api_function(userdata, user_id, *args)  # Modifikation der Userdaten mit der api funktion
+        json.dump(data, open(file_path, "w+"), indent=4)
+
+    return wrapper
 
 
-def get_player_data(userID):
-    userID = str(userID)
-    player_object: dict = json.load(open("../resources/player_data.json", "r+"))
-    if str(userID) not in list(player_object.keys()):
-        return None
-    player_object = json.load(open("../resources/player_data.json", "r+"))[userID]
-    player_stats = Players.PlayerStats()
-    player_stats.tictactoe = player_object["TicTacToe"]
-    player_stats.connect4 = player_object["Connect4"]
-    player_stats.hangman = player_object["Hangman"]
-    player = Players.Player(userID, player_object["xp"], player_stats)
-    return player
+# api funktionen:
+@json_decorator
+def add_xp(userdata, user_id, xp):  # "userdata" muss man beim aufruf nicht wirklich angeben, das macht der Decorator
+    userdata["xp"] += xp
+    return userdata  # Die modifizierten Daten hier einfach zurückgeben
 
 
-def get_field(userID, field_name):
-    player_object = get_player_data(userID).to_json()
-    return player_object[str(userID)][field_name]
-
-
-def update_player_data(userID, field_name: str, new_field_value):
-    if get_player_data(userID) is None:
-        logging.error("[GameAPI] Player does not exists.")
-    player_object = get_player_data(userID).to_json()
-    player_object[str(userID)][field_name] = new_field_value
-    json.dump(player_object, open("../resources/player_data.json", "r+"))
-
-
-def exists_player(user_id):
-    return get_player_data(user_id) is not None
+@json_decorator
+def add_to_stats(userdata, user_id, game_name, wins=0, played=0):
+    userdata["stats"][game_name] = [x + y for x, y in zip(userdata["stats"].get(game_name, [0, 0]), [wins, played])]
+    return userdata
