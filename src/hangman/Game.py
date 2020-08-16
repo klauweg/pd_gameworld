@@ -3,10 +3,10 @@ from discord.ext import commands
 
 
 class Game(commands.Cog):
-    def __init__(self, playerids, channelid,  bot, notguessingplayerid):
+    def __init__(self, players, channelid,  bot, notguessingplayer):
         self.correct_word = None
-        self.playerids = playerids
-        self.not_guessing_player_id = notguessingplayerid
+        self.players = players
+        self.not_guessing_player = notguessingplayer
         self.channelid = channelid
         self.guessed_letters = []
         self.gamestate = 0

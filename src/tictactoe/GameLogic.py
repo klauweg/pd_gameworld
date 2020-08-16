@@ -20,8 +20,8 @@ class TicTacToeGameLogic(commands.Cog):
     async def tictactoe(self, ctx: commands.Context):
         if ctx.channel.id is not self.inviteChannel and ctx.author.bot is True:
             return
-        if self.queue.__contains__(ctx.author.id):
-             self.queue.remove(ctx.author.id)
+        if self.queue.__contains__(ctx.author):
+             self.queue.remove(ctx.author)
              embed = discord.Embed(title="See you soon!", description=f"""{ctx.author.display_name} left the Queue""",
                                    color=0x49ff35)
              embed.set_author(name="ConnectFour",
@@ -37,7 +37,7 @@ class TicTacToeGameLogic(commands.Cog):
                                                                                 str(self.channels_in_use.__len__()),
                                                                            category=get(guild.categories,
                                                                                         name="⚔| TIC TAC TOE |⚔"))
-            game = TicTacToeGame.TicTacToeGame([ctx.author.id, self.queue.get()])
+            game = TicTacToeGame.TicTacToeGame([ctx.author, self.queue.get()])
             game.currentPlayer = game.players[0]
             game.currentPlayerID = 0
             self.channels_in_use[channel.id] = game
@@ -52,14 +52,14 @@ class TicTacToeGameLogic(commands.Cog):
             embed.set_thumbnail(
                 url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png"
                     "?size=256")
-            embed.add_field(name="Players", value=self.bot.get_user(game.players[0]).mention + " vs. " +
-                                                  self.bot.get_user(game.players[1]).mention,
+            embed.add_field(name="Players", value=game.players[0].mention + " vs. " +
+                                                  game.players[1].mention,
                             inline=True)
             await ctx.send(embed=embed)
             await channel.purge(limit=100)
             await channel.send(file=await self.build_board(placedFields=game.placedFields))
         else:
-            self.queue.put(ctx.author.id)
+            self.queue.put(ctx.author)
             embed = discord.Embed(title="You joined the queue.",
                                   description="Please wait a moment until a channel becomes free or another player "
                                               "joins the queue", color=0x44df30)
@@ -84,9 +84,9 @@ class TicTacToeGameLogic(commands.Cog):
                 channel.id).is_empty():
             game: TicTacToeGame.TicTacToeGame = self.channels_in_use.get(channel.id)
             # checks if player is player of this round
-            if game.players.__contains__(message.author.id):
+            if game.players.__contains__(message.author):
                 # checks if its player turn
-                if game.currentPlayer is message.author.id:
+                if game.currentPlayer is message.author:
                     if game.is_working == False:
                         game.is_working = True
                         id = game.fields.get(message.content)
@@ -100,7 +100,7 @@ class TicTacToeGameLogic(commands.Cog):
                                 await channel.purge()
                                 await channel.send(file=await self.build_board(game.placedFields))
                                 if game.compute_winner() == 1:
-                                    embed = discord.Embed(title=":tada: Player " + self.bot.get_user(game.players[1]).name +
+                                    embed = discord.Embed(title=":tada: Player " + game.players[1].name +
                                                                 " won :tada:",
                                                           colour=discord.Colour.green())
                                     await channel.send(embed=embed)
@@ -109,7 +109,7 @@ class TicTacToeGameLogic(commands.Cog):
                                     return
                                 elif game.compute_winner() == 0:
                                     embed = discord.Embed(
-                                        title=":tada: Player " + self.bot.get_user(game.players[0]).name + " won :tada:",
+                                        title=":tada: Player " + game.players[0].name + " won :tada:",
                                         colour=discord.Colour.green())
                                     await channel.send(embed=embed)
                                     await self.stopGame(channel.id)

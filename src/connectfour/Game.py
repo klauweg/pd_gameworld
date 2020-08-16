@@ -7,13 +7,12 @@ from discord.ext import commands
 
 class ConnectFourGame(commands.Cog):
 
-    def __init__(self, playerlistids, cid, botvar, gamefield, message):
+    def __init__(self, playerlist, cid, gamefield, message):
         self.row_count = 6
         self.column_count = 7
         self.turn = 2
-        self.playerids = playerlistids
+        self.players = playerlist
         self.channelid = cid
-        self.bot: commands.Bot = botvar
         self.gamefield = gamefield
         self.gamefield_message = message
         self.aktplayer = 1
