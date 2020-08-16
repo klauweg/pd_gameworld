@@ -4,6 +4,7 @@ import io
 import numpy as np
 from PIL import Image
 
+from GameAPI.Book import Book
 from connectfour.Game import ConnectFourGame
 from discord.ext import commands
 import discord
@@ -108,6 +109,16 @@ class ConnectFourGameLogic(commands.Cog):
             embed.set_footer(text="Thanks vor Playing!")
             await ctx.channel.send(embed=embed, delete_after=10)
             await self.add_to_queue(member.id)
+
+    @commands.command()
+    async def howto(self, ctx: commands.Context, *, member: discord.Member = None):
+        await ctx.message.delete()
+        commandchannel = ctx.channel
+        if commandchannel.id == self.joinchannel:
+            book: Book = Book(["By reacting to the message you can choose in which column you put your chip.",
+                               "The first player to have 4 chips in a row wins (diagonally, horizontally, vertically)"], self.bot, self.joinchannel)
+            self.bot.add_cog(book)
+            await book.send_message()
 
     async def stop(self, channel_id):
         game = self.channels_in_use[channel_id]

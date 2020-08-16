@@ -1,5 +1,8 @@
 import json
 
+import discord
+client = discord.client
+
 
 filename="resources/player_data_new.json"
 
@@ -42,4 +45,4 @@ def add_player_stats(user_id, gamename, won ):
         if won:
             userdata[gamename][1] += 1
         return userdata
-    modify_user( user_id, todo)
+    modify_user(user_id, todo)
