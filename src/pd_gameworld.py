@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 
-from GameAPI.PlayerAPI import FileManager
-from GameAPI.PlayerAPI.Players import Player, PlayerStats
+from GameAPI.PlayerDataApi import FileManager
+from GameAPI.PlayerDataApi.Players import Player, PlayerStats
 from bugreport.BugReport import BugReport
 from tictactoe.GameLogic import TicTacToeGameLogic
 from connectfour.Gamelogic import ConnectFourGameLogic
