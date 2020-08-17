@@ -10,7 +10,8 @@ import io
 
 
 class TicTacToeGameLogic(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, playing_players):
+        self.playing_players = playing_players
         self.bot: commands.Bot = bot
         self.queue: Queue = Queue()
         self.channels_in_use = {
@@ -30,7 +31,8 @@ class TicTacToeGameLogic(commands.Cog):
                               icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
              embed.set_thumbnail(
                  url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-             await ctx.channel.send(embed=embed)
+             await ctx.channel.send(embed=embed, delete_after=10)
+             self.playing_players.remove(ctx.author.id)
              return
         guild: discord.Guild = ctx.guild
 
@@ -57,10 +59,15 @@ class TicTacToeGameLogic(commands.Cog):
             embed.add_field(name="Players", value=game.players[0].mention + " vs. " +
                                                   game.players[1].mention,
                             inline=True)
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, delete_after=10)
             await channel.purge(limit=100)
             await channel.send(file=await self.build_board(placedFields=game.placedFields))
         else:
+
+            if ctx.author.id in self.playing_players:
+                await ctx.message.delete()
+                return
+            self.playing_players.append(ctx.author.id)
             self.queue.put(ctx.author)
             embed = discord.Embed(title="You joined the queue.",
                                   description="Please wait a moment until a channel becomes free or another player "
@@ -72,7 +79,7 @@ class TicTacToeGameLogic(commands.Cog):
 
             embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344"
                                     "/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, delete_after=10)
 
     # Searches for free channels to play and returns its id.
 
@@ -107,14 +114,16 @@ class TicTacToeGameLogic(commands.Cog):
                                                           colour=discord.Colour.green())
                                     await channel.send(embed=embed)
                                     try:
-                                        await Utils.add_xp(game.players[game.currentPlayerID], 20)
+                                        await Utils.add_xp(game.players[1], 20)
                                     except:
                                         pass
-                                    await Utils.add_to_stats(game.players[game.currentPlayerID], "TicTacToe", 1, 0)
+                                    await Utils.add_to_stats(game.players[1], "TicTacToe", 1, 0)
                                     for player in game.players:
                                         await Utils.add_to_stats(player , "TicTacToe", 0, 1)
                                     await self.stopGame(channel.id)
                                     game.is_working = False
+                                    for player in game.players:
+                                        self.playing_players.remove(player.id)
                                     return
                                 elif game.compute_winner() == 0:
                                     embed = discord.Embed(
@@ -122,14 +131,16 @@ class TicTacToeGameLogic(commands.Cog):
                                         colour=discord.Colour.green())
                                     await channel.send(embed=embed)
                                     try:
-                                        await Utils.add_xp(game.players[game.currentPlayerID], 20)
+                                        await Utils.add_xp(game.players[game.players[0]], 20)
                                     except:
                                         pass
-                                    await Utils.add_to_stats(game.players[game.currentPlayerID], "TicTacToe", 1, 0)
+                                    await Utils.add_to_stats(game.players[game.players[0]], "TicTacToe", 1, 0)
                                     for player in game.players:
                                         await Utils.add_to_stats(player , "TicTacToe", 0, 1)
                                     await self.stopGame(channel.id)
                                     game.is_working = False
+                                    for player in game.players:
+                                        self.playing_players.remove(player.id)
                                     return
                                 elif game.compute_winner() == -2:
                                     embed = discord.Embed(title=":crossed_swords:Undecided:crossed_swords: ",
@@ -144,6 +155,8 @@ class TicTacToeGameLogic(commands.Cog):
                                         await Utils.add_to_stats(player , "TicTacToe", 0, 1)
                                     await self.stopGame(channel.id)
                                     game.is_working = False
+                                    for player in game.players:
+                                        self.playing_players.remove(player.id)
                                     return
                                 game.change_to_next_player()
                                 self.channels_in_use[channel.id] = game
@@ -152,19 +165,19 @@ class TicTacToeGameLogic(commands.Cog):
                             embed = discord.Embed(title=":loudspeaker: The Field is not valid :loudspeaker:",
                                                   colour=discord.Colour.red())
                             await channel.send(embed=embed, delete_after=10)
-                            await message.delete(delay=10)
+                            await message.delete()
                             game.is_working = False
 
                 else:
                     embed = discord.Embed(title=":loudspeaker: It is not your turn :loudspeaker:",
                                           colour=discord.Colour.red())
                     await channel.send(embed=embed, delete_after=10)
-                    await message.delete(delay=10)
+                    await message.delete()
             else:
                 embed = discord.Embed(title=":loudspeaker: You aren't a player of this game. :loudspeaker:",
                                       colour=discord.Colour.red())
                 await channel.send(embed=embed, delete_after=10)
-                await message.delete(delay=10)
+                await message.delete()
 
     async def stopGame(self, channel_id):
         self.channels_in_use.pop(channel_id)

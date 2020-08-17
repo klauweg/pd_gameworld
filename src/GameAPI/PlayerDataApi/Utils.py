@@ -19,6 +19,11 @@ async def add_to_stats(member, game_name, wins=0, played=0):
     userdata["stats"][game_name] = [x + y for x, y in zip(userdata["stats"].get(game_name, [0, 0]), [wins, played])]
     json.setuser(member.id, userdata)
 
+async def get_player_data(member):
+    json = JsonData()
+    userdata = json.getuser(member.id)
+    return userdata
+
 async def get_level(memberid):
     json = JsonData()
     member_xp = json.getuser(memberid)["xp"]

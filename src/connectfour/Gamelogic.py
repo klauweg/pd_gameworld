@@ -12,9 +12,10 @@ import discord
 
 
 class ConnectFourGameLogic(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, playing_players):
         self.channels_in_use = {
         }
+        self.playing_players = playing_players
         self.queue = []
         self.bot: commands.Bot = bot
         self.joinchannel = 743425069216170024
@@ -101,24 +102,29 @@ class ConnectFourGameLogic(commands.Cog):
         await ctx.message.delete()
         commandchannel = ctx.channel
         if commandchannel.id == self.joinchannel:
-            # if member.id in self.queue:
-            #    self.queue.remove(member.id)
-            #    embed = discord.Embed(title="See you soon!", description=f"""{member.display_name} left the Queue""",color=0x49ff35)
-            #    embed.set_author(name="ConnectFour",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            #    embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            #    await ctx.channel.send(embed=embed, delete_after=10)
-            #    return
-            embed = discord.Embed(title="Nice!", description=f"""{member.name} Joined the Queue""",
-                                  color=0x49ff35)
-            embed.set_author(name="ConnectFour",
-                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.add_field(name="But:", value="It may take a moment for the game to start, so sit back and relax",
-                            inline=False)
-            embed.set_thumbnail(
-                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.set_footer(text="Thanks vor Playing!")
-            await ctx.channel.send(embed=embed, delete_after=10)
-            await self.add_to_queue(member)
+            if member in self.queue:
+                self.queue.remove(member)
+                embed = discord.Embed(title="See you soon!", description=f"""{member.display_name} left the Queue""",color=0x49ff35)
+                embed.set_author(name="ConnectFour",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await ctx.channel.send(embed=embed, delete_after=10)
+                self.playing_players.remove(ctx.author.id)
+                return
+            else:
+                if ctx.author.id in self.playing_players:
+                    return
+                self.playing_players.append(ctx.author.id)
+                embed = discord.Embed(title="Nice!", description=f"""{member.name} Joined the Queue""",
+                                      color=0x49ff35)
+                embed.set_author(name="ConnectFour",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.add_field(name="But:", value="It may take a moment for the game to start, so sit back and relax",
+                                inline=False)
+                embed.set_thumbnail(
+                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_footer(text="Thanks vor Playing!")
+                await ctx.channel.send(embed=embed, delete_after=10)
+                await self.add_to_queue(member)
 
     @commands.command()
     async def howto(self, ctx: commands.Context, *, member: discord.Member = None):
@@ -136,6 +142,8 @@ class ConnectFourGameLogic(commands.Cog):
         await self.bot.get_channel(game.channelid).delete()
         self.bot.remove_cog(game)
         self.channels_in_use.pop(channel_id)
+        for player in game.players:
+            self.playing_players.remove(player.id)
 
     async def sendmessage(self, game):
         await game.gamefield_message.delete()

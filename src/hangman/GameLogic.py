@@ -14,7 +14,8 @@ from hangman.Game import Game
 
 
 class HangManGameLogic(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, playing_players):
+        self.playing_players = playing_players
         self.channels_in_use = {
         }
         self.bot: commands.Bot = bot
@@ -109,8 +110,12 @@ class HangManGameLogic(commands.Cog):
                 embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 await ctx.channel.send(embed=embed, delete_after=10)
+                self.playing_players.remove(ctx.author.id)
                 return
 
+            if ctx.author.id in self.playing_players:
+                return
+            self.playing_players.append(ctx.author.id)
             embed = discord.Embed(title="Nice!", description=f"""{member.display_name} Joined the Queue""", color=0x49ff35)
             embed.set_author(name="Hangman", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             embed.add_field(name="But:", value="It may take a moment for the game to start, so sit back and relax", inline=False)
@@ -175,6 +180,8 @@ class HangManGameLogic(commands.Cog):
                             await Utils.add_to_stats(player, "HangMan", 0, 1)
                         await asyncio.sleep(10)
                         await self.stop(game.channelid)
+                        for player in game.players:
+                            self.playing_players.remove(player.id)
                     elif game.is_valid_guess(message.content.upper()):
                         if not game.has_already_guessed(message.content.upper()):
                             await game.message.delete()
@@ -189,6 +196,8 @@ class HangManGameLogic(commands.Cog):
                                     await Utils.add_to_stats(player, "HangMan", 0, 1)
                                 await asyncio.sleep(10)
                                 await self.stop(game.channelid)
+                                for player in game.players:
+                                    self.playing_players.remove(player.id)
                     game.is_in_action = False
                     return
                 else:
