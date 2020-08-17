@@ -13,11 +13,11 @@ async def add_xp(member, xp):
     await update_player_nick(member)
 
 
-async def add_to_stats(user_id, game_name, wins=0, played=0):
+async def add_to_stats(member, game_name, wins=0, played=0):
     json = JsonData()
-    userdata = json.getuser(user_id)
+    userdata = json.getuser(member.id)
     userdata["stats"][game_name] = [x + y for x, y in zip(userdata["stats"].get(game_name, [0, 0]), [wins, played])]
-    json.setuser(user_id, userdata)
+    json.setuser(member.id, userdata)
 
 async def get_level(memberid):
     json = JsonData()

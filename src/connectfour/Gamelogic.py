@@ -179,9 +179,15 @@ class ConnectFourGameLogic(commands.Cog):
                                     await game.insert_selected(row, col, game.aktplayer)
                                     await self.sendmessage(game)
                                 if not await game.check_state(game.aktplayer):
-                                    embed = discord.Embed(title=":tada: " + game.players[game.aktplayer].display_name + " won :tada:",
+                                    embed = discord.Embed(title=":tada: " + game.players[game.aktplayer].name + " won :tada:",
                                                           colour=discord.Colour.green())
-                                    await Utils.add_xp(game.players[game.aktplayer], 20)
+                                    try:
+                                        await Utils.add_xp(game.players[game.aktplayer], 20)
+                                    except:
+                                        pass
+                                    await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
+                                    for player in game.players:
+                                        await Utils.add_to_stats(player , "ConnectFour", 0, 1)
                                     await self.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
                                     await asyncio.sleep(5)
                                     await self.stop(game.channelid)

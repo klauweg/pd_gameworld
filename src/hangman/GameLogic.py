@@ -6,6 +6,7 @@ import discord
 from PIL import Image, ImageDraw, ImageFont
 from discord.ext import commands
 
+from GameAPI.PlayerDataApi import Utils
 from GameAPI.Queue import Queue
 
 from threading import Timer
@@ -165,6 +166,13 @@ class HangManGameLogic(commands.Cog):
                         embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await game.bot.get_channel(game.channelid).send(embed=embed)
+                        try:
+                            await Utils.add_xp(message.author, 20)
+                        except:
+                            pass
+                        await Utils.add_to_stats(message.author, "HangMan", 1, 0)
+                        for player in game.players:
+                            await Utils.add_to_stats(player, "HangMan", 0, 1)
                         await asyncio.sleep(10)
                         await self.stop(game.channelid)
                     elif game.is_valid_guess(message.content.upper()):
@@ -177,6 +185,8 @@ class HangManGameLogic(commands.Cog):
                                 embed.set_author(name="Hangman", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                                 await game.bot.get_channel(game.channelid).send(embed=embed)
+                                for player in game.players:
+                                    await Utils.add_to_stats(player, "HangMan", 0, 1)
                                 await asyncio.sleep(10)
                                 await self.stop(game.channelid)
                     game.is_in_action = False

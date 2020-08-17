@@ -1,4 +1,6 @@
 from discord.ext import commands
+
+from GameAPI.PlayerDataApi import Utils
 from tictactoe import TicTacToeGame
 from GameAPI.Queue import Queue
 import discord
@@ -104,6 +106,13 @@ class TicTacToeGameLogic(commands.Cog):
                                                                 " won :tada:",
                                                           colour=discord.Colour.green())
                                     await channel.send(embed=embed)
+                                    try:
+                                        await Utils.add_xp(game.players[game.currentPlayerID], 20)
+                                    except:
+                                        pass
+                                    await Utils.add_to_stats(game.players[game.currentPlayerID], "TicTacToe", 1, 0)
+                                    for player in game.players:
+                                        await Utils.add_to_stats(player , "TicTacToe", 0, 1)
                                     await self.stopGame(channel.id)
                                     game.is_working = False
                                     return
@@ -112,6 +121,13 @@ class TicTacToeGameLogic(commands.Cog):
                                         title=":tada: Player " + game.players[0].name + " won :tada:",
                                         colour=discord.Colour.green())
                                     await channel.send(embed=embed)
+                                    try:
+                                        await Utils.add_xp(game.players[game.currentPlayerID], 20)
+                                    except:
+                                        pass
+                                    await Utils.add_to_stats(game.players[game.currentPlayerID], "TicTacToe", 1, 0)
+                                    for player in game.players:
+                                        await Utils.add_to_stats(player , "TicTacToe", 0, 1)
                                     await self.stopGame(channel.id)
                                     game.is_working = False
                                     return
@@ -119,6 +135,13 @@ class TicTacToeGameLogic(commands.Cog):
                                     embed = discord.Embed(title=":crossed_swords:Undecided:crossed_swords: ",
                                                           color=0xffe605)
                                     await channel.send(embed=embed)
+                                    try:
+                                        await Utils.add_xp(game.players[game.currentPlayerID], 20)
+                                    except:
+                                        pass
+                                    await Utils.add_to_stats(game.players[game.currentPlayerID], "TicTacToe", 1, 0)
+                                    for player in game.players:
+                                        await Utils.add_to_stats(player , "TicTacToe", 0, 1)
                                     await self.stopGame(channel.id)
                                     game.is_working = False
                                     return
