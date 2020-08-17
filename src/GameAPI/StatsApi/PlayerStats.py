@@ -1,45 +1,32 @@
 import json
+import os.path as path
 
+file_path = "player_data.json"
 
-filename="resources/player_data_new.json"
+class JsonData():
+    def __init__(self):
+        self.data = {}
+        if path.isfile(file_path):
+            with open(file_path, "r") as fp:
+                self.data = json.load(fp)
 
-def load_data():
-    try:
-        file = open( filename, "r")
-        data = json.load(file)
-        file.close()
-    except:
-        print("File existiert nicht, leeres Dictionary erzeugen...")
-        data = {}
-    return data
+    def getuser( self, user_id ):
+        return self.data.get( user_id, {"xp":0, "stats": {}} )
 
-def modify_user( user_id, todo ):
-    data = load_data()
+    def setuser( self, user_id, userdata ):
+        self.data[ user_id ] = userdata
+        with open( file_path, "w" ) as fp:
+            json.dump( self.data, fp, indent=4 )
 
-    if user_id in data: # Existiert der Benutzer?
-        userdata = data[user_id] # Daten des Benutzer extrahieren
-    else:
-        userdata = { "xp": 0 } # sonst neuen Benutzer mit xp=0 anlegen
+# api funktionen:
+def add_xp( user_id, xp):
+    json = JsonData()
+    userdata = json.getuser( user_id )
+    userdata["xp"] += xp
+    json.setuser( user_id, userdata )
 
-    userdata = todo( userdata ) # Vordefinierte to do Funktion ausführen
-    data[user_id]=userdata   # Userdaten aktualisieren
-
-    with open(filename, "w") as file:
-        json.dump( data, file, indent=4)
-
-
-def add_xp(user_id , xp):
-    def todo( userdata ):
-        userdata["xp"] += xp
-        return userdata
-    modify_user( user_id, todo)
-
-def add_player_stats(user_id, gamename, won ):
-    def todo( userdata ):
-        if not gamename in userdata:
-            userdata[gamename] = [ 0,0 ]
-        userdata[gamename][0] += 1  # Anzahl der gesamten Spiele +1
-        if won:
-            userdata[gamename][1] += 1
-        return userdata
-    modify_user( user_id, todo)
+def add_to_stats( user_id, game_name, wins=0, played=0):
+    json = JsonData()
+    userdata = json.getuser( user_id )
+    userdata["stats"][game_name] = [ x+y for x,y in zip( userdata["stats"].get(game_name, [0, 0]), [ wins, played ] ) ]
+    json.setuser( user_id, userdata )
