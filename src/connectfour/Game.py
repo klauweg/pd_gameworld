@@ -13,6 +13,7 @@ class ConnectFourGame(commands.Cog):
         self.turn = 2
         self.players = playerlist
         self.channelid = cid
+        self.last_actions = {}
         self.gamefield = gamefield
         self.gamefield_message = message
         self.aktplayer = 1

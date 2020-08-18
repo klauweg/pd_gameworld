@@ -1,33 +1,23 @@
 class Queue:
+    __occupied_players=[]
+
     def __init__(self):
         self.queue = []
+        self.add_action = None # Callbackfunktion für die Spiele
 
-    def put(self, item):
-        self.queue.append(item)
+    async def append(self, ctx):
+        if ctx.author in Queue.__occupied_players:
+            await ctx.channel.send( str( ctx.author ) + " ist schon in einer Queue", delete_after=10)
+        else:
+            Queue.__occupied_players.append( ctx.author)
+            self.queue.append(ctx)
+            await self.add_action()  # Callbackfunktion ausführen
 
-    def get(self):
-        return_value = self.queue[0]
-        self.remove(self.queue[0])
-        return return_value
+    def release_player(self, player):
+        self.__occupied_players.remove( player )
 
-    def remove(self, value):
-        self.queue.remove(value)
+    def pop(self):
+        return self.queue.pop(0)
 
-    def remove_by_index(self, index):
-        value = self.queue[index]
-        self.remove(value)
-
-    def index(self, value):
-        return self.queue.index(value)
-
-    def pick(self, count):
-        values = []
-        for x in range(0, count):
-            values.append(self.get())
-        return values
-
-    def __len__(self):
+    def len(self):
         return len(self.queue)
-
-    def __contains__(self, item):
-        return self.queue.__contains__(item)
