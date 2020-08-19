@@ -12,9 +12,11 @@ import discord
 
 
 class ConnectFourGameLogic(commands.Cog):
+    channels_in_use = {}
+    
     def __init__(self, queue ):
-        self.channels_in_use = {}
         self.queue = queue
+        # check_for_gamestart action in der queue registrieren:
         self.queue.add_action = self.check_for_gamestart
 
     # After a player join or a game finsihed do this function
@@ -22,28 +24,11 @@ class ConnectFourGameLogic(commands.Cog):
         while (self.queue.len() >= 2):
             # ctx objekte aus der queue holen:
             gameplayers = [self.queue.pop(), self.queue.pop()]
-            bot = gameplayers[0].bot
-            guild = gameplayers[0].guild
-            joinchannel = gameplayers[0].channel
-
-
             # Das eigentliche Spiel mit zwei Spielern starten:
             gameobject = ConnectFourGame(gameplayers)
-            
-            
-            gameobject.is_in_action = True
-            self.channels_in_use[gamechannel.id] = gameobject
-            await message.add_reaction("1️⃣")
-            await message.add_reaction('2️⃣')
-            await message.add_reaction('3️⃣')
-            await message.add_reaction('4️⃣')
-            await message.add_reaction('5️⃣')
-            await message.add_reaction('6️⃣')
-            await message.add_reaction("7️⃣")
-            gameobject.is_in_action = False
             break
 
-    async def build_board(self, gamefield: np.matrix):
+    def build_board(self, gamefield: np.matrix):
         field_img: Image.Image = Image.open("../resources/connectfour/field.png")
         o = Image.open("../resources/connectfour/o_universe.png")
         X = Image.open("../resources/connectfour/x_universe.png")
@@ -74,10 +59,10 @@ class ConnectFourGameLogic(commands.Cog):
         return file
 
     async def stop(self, channel_id):
-        game = self.channels_in_use[channel_id]
+        game = ConnectFourGameLogic.channels_in_use[channel_id]
         await self.bot.get_channel(game.channelid).delete()
         self.bot.remove_cog(game)
-        self.channels_in_use.pop(channel_id)
+        ConnectFourGameLogic.channels_in_use.pop(channel_id)
         for player in game.players:
             self.playing_players.remove(player.id)
 
@@ -95,8 +80,8 @@ class ConnectFourGameLogic(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
-        if self.channels_in_use.__contains__(payload.message.channel.id):
-            game: ConnectFourGame = self.channels_in_use.get(payload.message.channel.id)
+        if ConnectFourGameLogic.channels_in_use.__contains__(payload.message.channel.id):
+            game: ConnectFourGame = ConnectFourGameLogic.channels_in_use.get(payload.message.channel.id)
             if payload.message.id == game.gamefield_message.id:
                 if member in game.players:
                     if game.is_in_action == False:
@@ -154,12 +139,13 @@ class ConnectFourGameLogic(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if self.channels_in_use.__contains__(message.channel.id):
-            game: ConnectFourGame = self.channels_in_use.get(message.channel.id)
+        if ConnectFourGameLogic.channels_in_use.__contains__(message.channel.id):
+            game: ConnectFourGame = ConnectFourGameLogic.channels_in_use.get(message.channel.id)
             if message.channel.id == game.channelid:
                 if message.author != self.bot.user:
                     await message.delete()
 
+#######################################################################################################
                     
 class ConnectFourGame(commands.Cog):
 
@@ -176,7 +162,6 @@ class ConnectFourGame(commands.Cog):
         self.row_count = 6
         self.column_count = 7
         self.turn = 2
-        self.last_actions = {}
         self.aktplayer = 1
         self.is_in_action = False
         
@@ -185,7 +170,7 @@ class ConnectFourGame(commands.Cog):
     async def prepare_game( self ):
         # Spielchannel erzeugen:
         self.gamechannel = await guild.create_text_channel(
-                          name="🔴🔵connectfour-" + str(len(self.channels_in_use) + 1),
+                          name="🔴🔵connectfour-" + str(len(ConnectFourGameLogic.channels_in_use) + 1),
                           category=bot.get_channel(742406887567392878))
 
         # Nachricht im Joinchannel:
@@ -204,9 +189,14 @@ class ConnectFourGame(commands.Cog):
            
         # Spielfeld erzeugen:
         self.gamefield = np.zeros((6, 7))
-        message = await gamechannel.send(file=await self.build_board(gamefield))
+        self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
 
-        
+        # Reaction Buttons hinzufügen:
+        self.is_in_action = True
+        ConnectFourGameLogic.channels_in_use[gamechannel.id] = self
+        for tag in '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣':
+            await self.gamefield_message.add_reaction( tag )
+        self.is_in_action = False
         
     async def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1

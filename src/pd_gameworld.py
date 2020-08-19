@@ -6,12 +6,15 @@ from ClearCmd.ClearCommand import ClearCommand
 from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport
+
+
 #from tictactoe.GameLogic import TicTacToeGameLogic
 from connectfour.Gamelogic import ConnectFourGameLogic
 #from hangman.GameLogic import HangManGameLogic
+
 client = commands.Bot(command_prefix="!")
 
-# channelid -> Spieleklasse
+# join-channelid -> Spieleklasse
 games = {
 #    743463967996903496: [HangManGameLogic],
 #    741835475085557860: [TicTacToeGameLogic],
@@ -23,6 +26,7 @@ for channelid in games:
     gamequeue = Queue()
     games[channelid].append(gamequeue)
     # Gameobject(commands.cog) erzeugen und im bot(client) registrieren:
+    # Jedem gameobject wird dabei die zugeordnete queue übergeben.
     gameobject = games[channelid][0](gamequeue)
     client.add_cog( gameobject )
 
@@ -31,7 +35,7 @@ async def join(ctx: commands.Context):
     await ctx.message.delete()
     if ctx.channel.id in games:
         # ctx object in der queue speichern:
-        queue = games[ctx.channel.id][1]
+        queue = games[ctx.channel.id][1] #zugehörige queue zum Channel ermitteln
         await queue.append(ctx)
 
 
@@ -52,3 +56,4 @@ async def on_command_error(ctx, error):
 
 token_file = open("../resources/privates.txt")
 client.run(token_file.readline())
+
