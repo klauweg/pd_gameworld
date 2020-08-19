@@ -28,35 +28,9 @@ class ConnectFourGameLogic(commands.Cog):
             gameobject = ConnectFourGame(gameplayers)
             break
 
-    def build_board(self, gamefield: np.matrix):
-        field_img: Image.Image = Image.open("../resources/connectfour/field.png")
-        o = Image.open("../resources/connectfour/o_universe.png")
-        X = Image.open("../resources/connectfour/x_universe.png")
-        fields = [[(34, 34), (184, 34), (334, 34), (484, 34), (634, 34), (784, 34), (934, 34)],
-                  [(34, 184), (184, 184), (334, 184), (484, 184), (634, 184), (784, 184), (934, 184)],
-                  [(34, 334), (184, 334), (334, 334), (484, 334), (634, 334), (784, 334), (934, 334)],
-                  [(34, 484), (184, 484), (334, 484), (484, 484), (634, 484), (784, 484), (934, 484)],
-                  [(34, 634), (184, 634), (334, 634), (484, 634), (634, 634), (784, 634), (934, 634)],
-                  [(34, 784), (184, 784), (334, 784), (484, 784), (634, 784), (784, 784), (934, 784)]]
-        fields.reverse()
-        for i in range(len(gamefield)):
-            for x in range(len(gamefield[i])):
-                if gamefield[i][x] == 1:
-                    field_img.paste(X, fields[i][x], X)
-                if gamefield[i][x] == 2:
-                    field_img.paste(o, fields[i][x], o)
-        arr = io.BytesIO()
-        field_img.save(arr, format="png")
-        basewidth = 250
-        wpercent = (basewidth / float(field_img.size[0]))
-        hsize = int((float(field_img.size[1]) * float(wpercent)))
-        field_img = field_img.resize((basewidth, hsize), Image.ANTIALIAS)
-        arr = io.BytesIO()
-        field_img.save(arr, format="png")
-        arr.seek(0)
-        file = discord.File(arr)
-        file.filename = "field.png"
-        return file
+        
+######################################################################################################
+
 
     async def stop(self, channel_id):
         game = ConnectFourGameLogic.channels_in_use[channel_id]
@@ -65,18 +39,6 @@ class ConnectFourGameLogic(commands.Cog):
         ConnectFourGameLogic.channels_in_use.pop(channel_id)
         for player in game.players:
             self.playing_players.remove(player.id)
-
-    async def sendmessage(self, game):
-        await game.gamefield_message.delete()
-        game.gamefield_message = await self.bot.get_channel(game.channelid).send(
-            file=await self.build_board(game.gamefield))
-        await game.gamefield_message.add_reaction("1️⃣")
-        await game.gamefield_message.add_reaction('2️⃣')
-        await game.gamefield_message.add_reaction('3️⃣')
-        await game.gamefield_message.add_reaction('4️⃣')
-        await game.gamefield_message.add_reaction('5️⃣')
-        await game.gamefield_message.add_reaction('6️⃣')
-        await game.gamefield_message.add_reaction("7️⃣")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
@@ -189,28 +151,26 @@ class ConnectFourGame(commands.Cog):
            
         # Spielfeld erzeugen:
         self.gamefield = np.zeros((6, 7))
-        self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
 
-        # Reaction Buttons hinzufügen:
-        self.is_in_action = True
+        #????????????????????????????
         ConnectFourGameLogic.channels_in_use[gamechannel.id] = self
-        for tag in '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣':
-            await self.gamefield_message.add_reaction( tag )
-        self.is_in_action = False
+
+        # Spielfeld initial einmal ausgeben:
+        self.send_gamefield()
         
-    async def insert_selected(self, row, col, playerindex):
+
+    def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
 
-    async def is_location_valid(self, col):
+    def is_location_valid(self, col):
         return self.gamefield[self.row_count - 1][col] == 0
 
-    async def get_next_row(self,col):
+    def get_next_row(self,col):
         for r in range(self.row_count):
             if self.gamefield[r][col] == 0:
                 return r
 
-
-    async def check_state(self, piece):
+    def check_state(self, piece):
         piece += 1
         for c in range(self.column_count):
             for r in range(self.row_count):
@@ -228,7 +188,45 @@ class ConnectFourGame(commands.Cog):
                     pass
         return True
 
+    async def send_gamefield( self ):
+        # ggf. altes Spielfeld löschen:
+        if self.gamefield_message:
+            await game.gamefield_message.delete()
+        # Neue Message erzeugen:
+        self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
+        # Reaction Buttons hinzufügen:
+        for tag in '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣':
+            await self.gamefield_message.add_reaction( tag )
 
+    def build_board(self, gamefield: np.matrix):
+        field_img: Image.Image = Image.open("../resources/connectfour/field.png")
+        o = Image.open("../resources/connectfour/o_universe.png")
+        X = Image.open("../resources/connectfour/x_universe.png")
+        fields = [[(34, 34), (184, 34), (334, 34), (484, 34), (634, 34), (784, 34), (934, 34)],
+                  [(34, 184), (184, 184), (334, 184), (484, 184), (634, 184), (784, 184), (934, 184)],
+                  [(34, 334), (184, 334), (334, 334), (484, 334), (634, 334), (784, 334), (934, 334)],
+                  [(34, 484), (184, 484), (334, 484), (484, 484), (634, 484), (784, 484), (934, 484)],
+                  [(34, 634), (184, 634), (334, 634), (484, 634), (634, 634), (784, 634), (934, 634)],
+                  [(34, 784), (184, 784), (334, 784), (484, 784), (634, 784), (784, 784), (934, 784)]]
+        fields.reverse()
+        for i in range(len(gamefield)):
+            for x in range(len(gamefield[i])):
+                if gamefield[i][x] == 1:
+                    field_img.paste(X, fields[i][x], X)
+                if gamefield[i][x] == 2:
+                    field_img.paste(o, fields[i][x], o)
+        arr = io.BytesIO()
+        field_img.save(arr, format="png")
+        basewidth = 250
+        wpercent = (basewidth / float(field_img.size[0]))
+        hsize = int((float(field_img.size[1]) * float(wpercent)))
+        field_img = field_img.resize((basewidth, hsize), Image.ANTIALIAS)
+        arr = io.BytesIO()
+        field_img.save(arr, format="png")
+        arr.seek(0)
+        file = discord.File(arr)
+        file.filename = "field.png"
+        return file
 
 
 
