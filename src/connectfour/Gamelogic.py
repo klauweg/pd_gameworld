@@ -10,34 +10,31 @@ from GameAPI.PlayerDataApi import Utils
 from discord.ext import commands
 import discord
 
-class ConnectFourGameLogic(commands.Cog):
-    def __init__(self, queue ):
+class GameControl():
+    def __init__(self, queue):
         self.queue = queue
         # check_for_gamestart action in der queue registrieren:
         self.queue.add_action = self.check_for_gamestart
 
     # Spiel erzeugen wenn genug Spieler in der Queue:
     async def check_for_gamestart(self):
-        while (self.queue.len() >= 2):
+        if self.queue.len() >= 2:
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
-            # Das eigentliche Spiel mit zwei Spielern starten:
-            # ( in der Game Klasse wird im constructor das Cog-Command registriert,
-            #   daher sollte es eine Referenz bis zur Selbstzerstörung geben )
-            ConnectFourGame( player_contexts )
-            break
+            # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
+            newgame = ConnectFourGame( player_contexts )
+            player_contexts[0].bot.add_cog( newgame )
 
 #######################################################################################################
                     
 class ConnectFourGame(commands.Cog):
-
     def __init__(self, contexts ):
         self.players = [ ctx.author for ctx in contexts ] # Extract Players
         self.bot = contexts[0].bot
         self.guild = contexts[0].guild
         self.joinchannel = contexts[0].channel
 
-        self.gamechannel = None # Wird erst im Constructor erzeugt
+        self.gamechannel = None # Wird erst in prepare_game() erzeugt!
         self.gamefield = None
         self.gamefield_message = None
 
@@ -47,7 +44,7 @@ class ConnectFourGame(commands.Cog):
         self.is_in_action = False
         self.emojis = { "1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6 }
         
-        self.bot.loop.create_task( self.prepare_game() )
+        self.bot.loop.create_task( self.prepare_game() ) # __init__ darf nicht async sein!
         
     async def prepare_game( self ):
         # Spielchannel erzeugen:
@@ -66,7 +63,7 @@ class ConnectFourGame(commands.Cog):
         embed.add_field(name="Players",
                              value=f"""{gameplayers[0].display_name} vs. {gameplayers[1].display_name}""",
                              inline=True)
-        embed.set_footer(text="Thanks for Playing!")
+        embed.set_footer(text="Have fun!")
         await self.joinchannel.send(embed=embed, delete_after=10)
            
         # Spielfeld erzeugen:

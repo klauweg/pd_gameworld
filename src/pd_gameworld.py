@@ -9,7 +9,7 @@ from bugreport.BugReport import BugReport
 
 
 #from tictactoe.GameLogic import TicTacToeGameLogic
-from connectfour.Gamelogic import ConnectFourGameLogic
+import connectfour
 #from hangman.GameLogic import HangManGameLogic
 
 client = commands.Bot(command_prefix="!")
@@ -18,18 +18,16 @@ client = commands.Bot(command_prefix="!")
 games = {
 #    743463967996903496: [HangManGameLogic],
 #    741835475085557860: [TicTacToeGameLogic],
-    743425069216170024: [ConnectFourGameLogic]
+    743425069216170024: [connectfour]
 }
 
+# Erzeugen der SpieleKontrollObjekte:
 for channelid in games:
-    # Queue für join-channel erzeugen und zuordnen:
-    gamequeue = Queue()
-    games[channelid].append(gamequeue)
-    # Gameobject(commands.cog) erzeugen und im bot(client) registrieren:
-    # Jedem gameobject wird dabei die zugeordnete queue übergeben.
-    gameobject = games[channelid][0](gamequeue)
-    client.add_cog( gameobject )
-
+    gamequeue = Queue()  # Queue erzeugen
+    games[channelid].append(gamequeue) # Die Queue dem Join Channel zuordnen
+    games[channelid][0].GameControl(gamequeue) # Spiel mit Kopplung an die Queue erzeugen
+    
+# Jemand will einem Spiel joinen und landet in der Queue:
 @client.command()
 async def join(ctx: commands.Context):
     await ctx.message.delete()
