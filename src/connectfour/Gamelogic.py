@@ -12,47 +12,24 @@ import discord
 
 
 class ConnectFourGameLogic(commands.Cog):
-    channels_in_use = {}
-    
     def __init__(self, queue ):
         self.queue = queue
         # check_for_gamestart action in der queue registrieren:
         self.queue.add_action = self.check_for_gamestart
 
-    # After a player join or a game finsihed do this function
+    # Spiel erzeugen wenn genug Spieler in der Queue:
     async def check_for_gamestart(self):
         while (self.queue.len() >= 2):
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten:
-            gameobject = ConnectFourGame( player_contexts )
+            ConnectFourGame( player_contexts )
             break
 
         
 ######################################################################################################
 
 
-    async def stop(self, channel_id):
-        game = ConnectFourGameLogic.channels_in_use[channel_id]
-        await self.bot.get_channel(game.channelid).delete()
-        self.bot.remove_cog(game)
-        ConnectFourGameLogic.channels_in_use.pop(channel_id)
-        for player in game.players:
-            self.playing_players.remove(player.id)
-
-
-                                game.aktplayer += 1
-                                if game.aktplayer == 2:
-                                    game.aktplayer = 0
-                                game.last_actions.clear()
-                                game.last_actions[game.players[game.aktplayer]] = time.time()
-
-                        game.is_in_action = False
-                    else:
-                        try:
-                            await payload.message.remove_reaction(payload.emoji, self.bot.get_user(member.id))
-                        except:
-                            return
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -111,6 +88,28 @@ class ConnectFourGame(commands.Cog):
         self.send_gamefield()
 
 
+    async def destroy_game( self ):
+        await self.bot.get_channel(game.channelid).delete()
+        self.bot.remove_cog(game)
+        ConnectFourGameLogic.channels_in_use.pop(channel_id)
+        for player in game.players:
+            self.playing_players.remove(player.id)
+
+
+                                game.aktplayer += 1
+                                if game.aktplayer == 2:
+                                    game.aktplayer = 0
+                                game.last_actions.clear()
+                                game.last_actions[game.players[game.aktplayer]] = time.time()
+
+                        game.is_in_action = False
+                    else:
+                        try:
+                            await payload.message.remove_reaction(payload.emoji, self.bot.get_user(member.id))
+                        except:
+                            return
+                        
+                        
 @commands.Cog.listener() # Action bei drücken eines Reaction-Buttons:
     async def on_reaction_add(self, payload: discord.Reaction, member):
         if payload.message == self.gamefield_message: # Ist das add-event für uns?
@@ -139,10 +138,9 @@ class ConnectFourGame(commands.Cog):
                     await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
                     for player in game.players:
                         await Utils.add_to_stats(player, "ConnectFour", 0, 1)
-                        
-                        
-                                    await asyncio.sleep(5)
-                                                                                             await self.stop(game.channelid)
+                    await asyncio.sleep(5)
+                    # Selbstzerstörung:
+                    await self.destroy_game()
 
 
     def insert_selected(self, row, col, playerindex):
