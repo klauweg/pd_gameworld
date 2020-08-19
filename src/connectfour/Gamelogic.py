@@ -7,46 +7,30 @@ from PIL import Image
 
 from GameAPI.Book import Book
 from GameAPI.PlayerDataApi import Utils
-from connectfour.Game import ConnectFourGame
 from discord.ext import commands
 import discord
 
 
 class ConnectFourGameLogic(commands.Cog):
-    def __init__(self, queue, bot):
-        self.bot = bot
+    def __init__(self, queue ):
         self.channels_in_use = {}
         self.queue = queue
         self.queue.add_action = self.check_for_gamestart
 
     # After a player join or a game finsihed do this function
-    def check_for_gamestart(self):
-        while (self.queue.len() > 1):
+    async def check_for_gamestart(self):
+        while (self.queue.len() >= 2):
+            # ctx objekte aus der queue holen:
             gameplayers = [self.queue.pop(), self.queue.pop()]
             bot = gameplayers[0].bot
             guild = gameplayers[0].guild
             joinchannel = gameplayers[0].channel
 
-            # Spielchannel erzeugen:
-            gamechannel = await guild.create_text_channel(
-                name="🔴🔵connectfour-" + str(len(self.channels_in_use) + 1),
-                category=bot.get_channel(742406887567392878))
 
-            gamefield = np.zeros((6, 7))
-            embed = discord.Embed(title="Game is starting!",
-                                  description="Playing in Channel: **" + gamechannel.name + "** !",
-                                  color=0x2dff32)
-            embed.set_thumbnail(
-                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.set_author(name="ConnectFour",
-                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.add_field(name="Players",
-                            value=f"""{gameplayers[0].display_name} vs. {gameplayers[1].display_name}""",
-                            inline=True)
-            embed.set_footer(text="Thanks for Playing!")
-            await joinchannel.send(embed=embed, delete_after=10)
-            message = await gamechannel.send(file=await self.build_board(gamefield))
-            gameobject = ConnectFourGame(gameplayers, gamechannel.id, gamefield, message)
+            # Das eigentliche Spiel mit zwei Spielern starten:
+            gameobject = ConnectFourGame(gameplayers)
+            
+            
             gameobject.is_in_action = True
             self.channels_in_use[gamechannel.id] = gameobject
             await message.add_reaction("1️⃣")
@@ -175,3 +159,87 @@ class ConnectFourGameLogic(commands.Cog):
             if message.channel.id == game.channelid:
                 if message.author != self.bot.user:
                     await message.delete()
+
+                    
+class ConnectFourGame(commands.Cog):
+
+    def __init__(self, playerlist ):
+        self.players = playerlist
+        self.bot = playerlist[0].bot
+        self.guild = playerlist[0].guild
+        self.joinchannel = playerlist[0].channel
+
+        self.gamechannel = None
+        self.gamefield = None
+        self.gamefield_message = None
+
+        self.row_count = 6
+        self.column_count = 7
+        self.turn = 2
+        self.last_actions = {}
+        self.aktplayer = 1
+        self.is_in_action = False
+        
+        playerlist[0].bot.loop.create_task( self.prepare_game() )
+        
+    async def prepare_game( self ):
+        # Spielchannel erzeugen:
+        self.gamechannel = await guild.create_text_channel(
+                          name="🔴🔵connectfour-" + str(len(self.channels_in_use) + 1),
+                          category=bot.get_channel(742406887567392878))
+
+        # Nachricht im Joinchannel:
+        embed = discord.Embed(title="Game is starting!",
+                            description="Playing in Channel: **" + gamechannel.name + "** !",
+                            color=0x2dff32)
+        embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_author(name="ConnectFour",
+                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.add_field(name="Players",
+                             value=f"""{gameplayers[0].display_name} vs. {gameplayers[1].display_name}""",
+                             inline=True)
+        embed.set_footer(text="Thanks for Playing!")
+        await self.joinchannel.send(embed=embed, delete_after=10)
+           
+        # Spielfeld erzeugen:
+        self.gamefield = np.zeros((6, 7))
+        message = await gamechannel.send(file=await self.build_board(gamefield))
+
+        
+        
+    async def insert_selected(self, row, col, playerindex):
+        self.gamefield[row][col] = playerindex + 1
+
+    async def is_location_valid(self, col):
+        return self.gamefield[self.row_count - 1][col] == 0
+
+    async def get_next_row(self,col):
+        for r in range(self.row_count):
+            if self.gamefield[r][col] == 0:
+                return r
+
+
+    async def check_state(self, piece):
+        piece += 1
+        for c in range(self.column_count):
+            for r in range(self.row_count):
+                try:
+                    if ((self.gamefield[r][c] == piece and self.gamefield[r][c + 1] == piece and self.gamefield[r][c + 2] == piece and
+                         self.gamefield[r][c + 3] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c] == piece and self.gamefield[r + 2][c] == piece and
+                             self.gamefield[r + 3][c] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c + 1] == piece and self.gamefield[r + 2][
+                                c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and self.gamefield[r - 2][
+                                c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
+                        return False
+                except:
+                    pass
+        return True
+
+
+
+
+
+
