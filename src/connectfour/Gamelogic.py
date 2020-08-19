@@ -7,59 +7,156 @@ from PIL import Image
 
 from GameAPI.Book import Book
 from GameAPI.PlayerDataApi import Utils
-from connectfour.Game import ConnectFourGame
 from discord.ext import commands
 import discord
 
-
-class ConnectFourGameLogic(commands.Cog):
-    def __init__(self, queue, bot):
-        self.bot = bot
-        self.channels_in_use = {}
+class GameControl():
+    def __init__(self, queue):
         self.queue = queue
+        # check_for_gamestart action in der queue registrieren:
         self.queue.add_action = self.check_for_gamestart
 
-    # After a player join or a game finsihed do this function
-    def check_for_gamestart(self):
-        while (self.queue.len() > 1):
-            gameplayers = [self.queue.pop(), self.queue.pop()]
-            bot = gameplayers[0].bot
-            guild = gameplayers[0].guild
-            joinchannel = gameplayers[0].channel
+    # Spiel erzeugen wenn genug Spieler in der Queue:
+    async def check_for_gamestart(self):
+        if self.queue.len() >= 2:
+            # ctx objekte aus der queue holen:
+            player_contexts = [self.queue.pop(), self.queue.pop()]
+            # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
+            newgame = ConnectFourGame( player_contexts )
+            player_contexts[0].bot.add_cog( newgame )
 
-            # Spielchannel erzeugen:
-            gamechannel = await guild.create_text_channel(
-                name="🔴🔵connectfour-" + str(len(self.channels_in_use) + 1),
-                category=bot.get_channel(742406887567392878))
+#######################################################################################################
+                    
+class ConnectFourGame(commands.Cog):
+    def __init__(self, contexts ):
+        self.players = [ ctx.author for ctx in contexts ] # Extract Players
+        self.bot = contexts[0].bot
+        self.guild = contexts[0].guild
+        self.joinchannel = contexts[0].channel
 
-            gamefield = np.zeros((6, 7))
-            embed = discord.Embed(title="Game is starting!",
-                                  description="Playing in Channel: **" + gamechannel.name + "** !",
-                                  color=0x2dff32)
-            embed.set_thumbnail(
+        self.gamechannel = None # Wird erst in prepare_game() erzeugt!
+        self.gamefield = None
+        self.gamefield_message = None
+
+        self.row_count = 6
+        self.column_count = 7
+        self.nextplayer = 1
+        self.is_in_action = False
+        self.emojis = { "1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6 }
+        
+        self.bot.loop.create_task( self.prepare_game() ) # __init__ darf nicht async sein!
+        
+    async def prepare_game( self ):
+        # Spielchannel erzeugen:
+        self.gamechannel = await guild.create_text_channel(
+                          name="🔴🔵connectfour-" + str(len(ConnectFourGameLogic.channels_in_use) + 1),
+                          category=bot.get_channel(742406887567392878))
+
+        # Nachricht im Joinchannel:
+        embed = discord.Embed(title="Game is starting!",
+                            description="Playing in Channel: **" + gamechannel.name + "** !",
+                            color=0x2dff32)
+        embed.set_thumbnail(
                 url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.set_author(name="ConnectFour",
+        embed.set_author(name="ConnectFour",
                              icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.add_field(name="Players",
-                            value=f"""{gameplayers[0].display_name} vs. {gameplayers[1].display_name}""",
-                            inline=True)
-            embed.set_footer(text="Thanks for Playing!")
-            await joinchannel.send(embed=embed, delete_after=10)
-            message = await gamechannel.send(file=await self.build_board(gamefield))
-            gameobject = ConnectFourGame(gameplayers, gamechannel.id, gamefield, message)
-            gameobject.is_in_action = True
-            self.channels_in_use[gamechannel.id] = gameobject
-            await message.add_reaction("1️⃣")
-            await message.add_reaction('2️⃣')
-            await message.add_reaction('3️⃣')
-            await message.add_reaction('4️⃣')
-            await message.add_reaction('5️⃣')
-            await message.add_reaction('6️⃣')
-            await message.add_reaction("7️⃣")
-            gameobject.is_in_action = False
-            break
+        embed.add_field(name="Players",
+                             value=f"""{gameplayers[0].display_name} vs. {gameplayers[1].display_name}""",
+                             inline=True)
+        embed.set_footer(text="Have fun!")
+        await self.joinchannel.send(embed=embed, delete_after=10)
+           
+        # Spielfeld erzeugen:
+        self.gamefield = np.zeros((6, 7))
 
-    async def build_board(self, gamefield: np.matrix):
+        # Spielfeld initial einmal ausgeben:
+        self.send_gamefield()
+
+
+# Nachrichten im Spielchannel werden gleich wieder gelöscht:
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if ( self.gamechannel == message.channel  # Unser Channel?
+         and self.bot.user != message.author ):   # Nachricht nicht vom Bot?
+             await message.delete()               # Dann löschen wir die Nachricht
+
+# Action bei drücken eines Reaction-Buttons: (Spielzug)
+    @commands.Cog.listener()
+    async def on_reaction_add(self, payload: discord.Reaction, member):
+        if ( payload.message == self.gamefield_message     # Ist das add-event für uns?
+         and member == self.players[ self.nextplayer ]     # Der richtige Spieler am Zug?
+         and payload.emoji in self.emojis                  # Valid emoji?
+         and self.is_in_action == False ):                 # sind wir alleine?
+            self.is_in_action = True
+            await payload.message.remove_reaction(payload.emoji, member) # remove add
+            col = self.emojis.get[ payload.emoji ]
+            # Ist der Zug möglich?
+            if self.is_location_valid(col):
+                row = game.get_next_row(col)
+                game.insert_selected(row, col, self.nextplayer)
+                # Neues spielfeld ausgeben:
+                self.send_gamefield()
+                # Hat jemand gewonnen?
+                if self.check_state(self.nextplayer):
+                    embed = discord.Embed(
+                             title=":tada: " + self.players[game.nextplayer].name + " won :tada:",
+                                        colour=discord.Colour.green())
+                    await self.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
+                    # Statistik
+                    await Utils.add_xp(game.players[game.aktplayer], 20)
+                    await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
+                    for player in game.players:
+                        await Utils.add_to_stats(player, "ConnectFour", 0, 1)
+                    await asyncio.sleep(5)
+                    # Selbstzerstörung:
+                    await self.gamechannel.delete()
+                    self.bot.remove_cog(self)
+                    return
+                else: # Das Spiel geht noch weiter:
+                    game.aktplayer %= 2  # zum anderen Spieler wechseln
+            self.is_in_action = False
+
+
+    def insert_selected(self, row, col, playerindex):
+        self.gamefield[row][col] = playerindex + 1
+
+    def is_location_valid(self, col):
+        return self.gamefield[self.row_count - 1][col] == 0
+
+    def get_next_row(self,col):
+        for r in range(self.row_count):
+            if self.gamefield[r][col] == 0:
+                return r
+
+    def check_state(self, piece):
+        piece += 1
+        for c in range(self.column_count):
+            for r in range(self.row_count):
+                try:
+                    if ((self.gamefield[r][c] == piece and self.gamefield[r][c + 1] == piece and self.gamefield[r][c + 2] == piece and
+                         self.gamefield[r][c + 3] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c] == piece and self.gamefield[r + 2][c] == piece and
+                             self.gamefield[r + 3][c] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c + 1] == piece and self.gamefield[r + 2][
+                                c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and self.gamefield[r - 2][
+                                c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
+                        return True
+                except:
+                    pass
+        return False
+
+    async def send_gamefield( self ):
+        # ggf. altes Spielfeld löschen:
+        if self.gamefield_message:
+            await game.gamefield_message.delete()
+        # Neue Message erzeugen:
+        self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
+        # Reaction Buttons hinzufügen:
+        for tag in self.emojis.keys():
+            await self.gamefield_message.add_reaction( tag )
+
+    def build_board(self, gamefield: np.matrix):
         field_img: Image.Image = Image.open("../resources/connectfour/field.png")
         o = Image.open("../resources/connectfour/o_universe.png")
         X = Image.open("../resources/connectfour/x_universe.png")
@@ -89,89 +186,6 @@ class ConnectFourGameLogic(commands.Cog):
         file.filename = "field.png"
         return file
 
-    async def stop(self, channel_id):
-        game = self.channels_in_use[channel_id]
-        await self.bot.get_channel(game.channelid).delete()
-        self.bot.remove_cog(game)
-        self.channels_in_use.pop(channel_id)
-        for player in game.players:
-            self.playing_players.remove(player.id)
 
-    async def sendmessage(self, game):
-        await game.gamefield_message.delete()
-        game.gamefield_message = await self.bot.get_channel(game.channelid).send(
-            file=await self.build_board(game.gamefield))
-        await game.gamefield_message.add_reaction("1️⃣")
-        await game.gamefield_message.add_reaction('2️⃣')
-        await game.gamefield_message.add_reaction('3️⃣')
-        await game.gamefield_message.add_reaction('4️⃣')
-        await game.gamefield_message.add_reaction('5️⃣')
-        await game.gamefield_message.add_reaction('6️⃣')
-        await game.gamefield_message.add_reaction("7️⃣")
 
-    @commands.Cog.listener()
-    async def on_reaction_add(self, payload: discord.Reaction, member):
-        if self.channels_in_use.__contains__(payload.message.channel.id):
-            game: ConnectFourGame = self.channels_in_use.get(payload.message.channel.id)
-            if payload.message.id == game.gamefield_message.id:
-                if member in game.players:
-                    if game.is_in_action == False:
-                        game.is_in_action = True
-                        await game.gamefield_message.remove_reaction(payload.emoji, self.bot.get_user(member.id))
-                        if member == game.players[game.aktplayer]:
-                            if member not in game.last_actions:
-                                game.last_actions[member] = time.time()
-                            emojis = {
-                                "1️⃣": 0,
-                                '2️⃣': 1,
-                                '3️⃣': 2,
-                                '4️⃣': 3,
-                                '5️⃣': 4,
-                                '6️⃣': 5,
-                                "7️⃣": 6
-                            }
-                            col = None
-                            try:
-                                col = emojis[payload.emoji]
-                            except:
-                                pass
-                            if col != None:
-                                if await game.is_location_valid(col):
-                                    row = await game.get_next_row(col)
-                                    await game.insert_selected(row, col, game.aktplayer)
-                                    await self.sendmessage(game)
-                                if not await game.check_state(game.aktplayer):
-                                    embed = discord.Embed(
-                                        title=":tada: " + game.players[game.aktplayer].name + " won :tada:",
-                                        colour=discord.Colour.green())
-                                    try:
-                                        await Utils.add_xp(game.players[game.aktplayer], 20)
-                                    except:
-                                        pass
-                                    await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
-                                    for player in game.players:
-                                        await Utils.add_to_stats(player, "ConnectFour", 0, 1)
-                                    await self.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
-                                    await asyncio.sleep(5)
-                                    await self.stop(game.channelid)
 
-                                game.aktplayer += 1
-                                if game.aktplayer == 2:
-                                    game.aktplayer = 0
-                                game.last_actions.clear()
-                                game.last_actions[game.players[game.aktplayer]] = time.time()
-
-                        game.is_in_action = False
-                    else:
-                        try:
-                            await payload.message.remove_reaction(payload.emoji, self.bot.get_user(member.id))
-                        except:
-                            return
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if self.channels_in_use.__contains__(message.channel.id):
-            game: ConnectFourGame = self.channels_in_use.get(message.channel.id)
-            if message.channel.id == game.channelid:
-                if message.author != self.bot.user:
-                    await message.delete()
