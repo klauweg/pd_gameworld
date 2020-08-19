@@ -23,9 +23,9 @@ class ConnectFourGameLogic(commands.Cog):
     async def check_for_gamestart(self):
         while (self.queue.len() >= 2):
             # ctx objekte aus der queue holen:
-            gameplayers = [self.queue.pop(), self.queue.pop()]
+            player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten:
-            gameobject = ConnectFourGame(gameplayers)
+            gameobject = ConnectFourGame( player_contexts )
             break
 
         
@@ -40,51 +40,6 @@ class ConnectFourGameLogic(commands.Cog):
         for player in game.players:
             self.playing_players.remove(player.id)
 
-    @commands.Cog.listener()
-    async def on_reaction_add(self, payload: discord.Reaction, member):
-        if ConnectFourGameLogic.channels_in_use.__contains__(payload.message.channel.id):
-            game: ConnectFourGame = ConnectFourGameLogic.channels_in_use.get(payload.message.channel.id)
-            if payload.message.id == game.gamefield_message.id:
-                if member in game.players:
-                    if game.is_in_action == False:
-                        game.is_in_action = True
-                        await game.gamefield_message.remove_reaction(payload.emoji, self.bot.get_user(member.id))
-                        if member == game.players[game.aktplayer]:
-                            if member not in game.last_actions:
-                                game.last_actions[member] = time.time()
-                            emojis = {
-                                "1️⃣": 0,
-                                '2️⃣': 1,
-                                '3️⃣': 2,
-                                '4️⃣': 3,
-                                '5️⃣': 4,
-                                '6️⃣': 5,
-                                "7️⃣": 6
-                            }
-                            col = None
-                            try:
-                                col = emojis[payload.emoji]
-                            except:
-                                pass
-                            if col != None:
-                                if await game.is_location_valid(col):
-                                    row = await game.get_next_row(col)
-                                    await game.insert_selected(row, col, game.aktplayer)
-                                    await self.sendmessage(game)
-                                if not await game.check_state(game.aktplayer):
-                                    embed = discord.Embed(
-                                        title=":tada: " + game.players[game.aktplayer].name + " won :tada:",
-                                        colour=discord.Colour.green())
-                                    try:
-                                        await Utils.add_xp(game.players[game.aktplayer], 20)
-                                    except:
-                                        pass
-                                    await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
-                                    for player in game.players:
-                                        await Utils.add_to_stats(player, "ConnectFour", 0, 1)
-                                    await self.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
-                                    await asyncio.sleep(5)
-                                    await self.stop(game.channelid)
 
                                 game.aktplayer += 1
                                 if game.aktplayer == 2:
@@ -111,23 +66,23 @@ class ConnectFourGameLogic(commands.Cog):
                     
 class ConnectFourGame(commands.Cog):
 
-    def __init__(self, playerlist ):
-        self.players = playerlist
-        self.bot = playerlist[0].bot
-        self.guild = playerlist[0].guild
-        self.joinchannel = playerlist[0].channel
+    def __init__(self, contexts ):
+        self.players = [ ctx.author for ctx in contexts ] # Extract Players
+        self.bot = contexts[0].bot
+        self.guild = contexts[0].guild
+        self.joinchannel = contexts[0].channel
 
-        self.gamechannel = None
+        self.gamechannel = None # Wird erst im Constructor erzeugt
         self.gamefield = None
         self.gamefield_message = None
 
         self.row_count = 6
         self.column_count = 7
-        self.turn = 2
-        self.aktplayer = 1
+        self.nextplayer = 1
         self.is_in_action = False
+        self.emojis = { "1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6 }
         
-        playerlist[0].bot.loop.create_task( self.prepare_game() )
+        self.bot.loop.create_task( self.prepare_game() )
         
     async def prepare_game( self ):
         # Spielchannel erzeugen:
@@ -152,12 +107,43 @@ class ConnectFourGame(commands.Cog):
         # Spielfeld erzeugen:
         self.gamefield = np.zeros((6, 7))
 
-        #????????????????????????????
-        ConnectFourGameLogic.channels_in_use[gamechannel.id] = self
-
         # Spielfeld initial einmal ausgeben:
         self.send_gamefield()
-        
+
+
+@commands.Cog.listener() # Action bei drücken eines Reaction-Buttons:
+    async def on_reaction_add(self, payload: discord.Reaction, member):
+        if payload.message == self.gamefield_message: # Ist das add-event für uns?
+            if member == self.players[ self.nextplayer ]: # Der richtige Spieler am Zug?
+                if self.is_in_action == True: # Locking wegen async event
+                    return
+                self.is_in_action = True
+                if not payload.emoji in self.emojis: # Valid emoji?
+                    return
+                await payload.message.remove_reaction(payload.emoji, member) # remove add
+                col = self.emojis.get[ payload.emoji ]
+                # Hier beginnt der eigentliche Spielzug:
+                if self.is_location_valid(col):
+                row = game.get_next_row(col)
+                game.insert_selected(row, col, self.nextplayer)
+                # Neues spielfeld ausgeben:
+                self.send_gamefield()
+                # Hat jemand gewonnen?
+                if self.check_state(self.nextplayer):
+                    embed = discord.Embed(
+                             title=":tada: " + self.players[game.nextplayer].name + " won :tada:",
+                                        colour=discord.Colour.green())
+                    await self.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
+                    # Statistik
+                    await Utils.add_xp(game.players[game.aktplayer], 20)
+                    await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
+                    for player in game.players:
+                        await Utils.add_to_stats(player, "ConnectFour", 0, 1)
+                        
+                        
+                                    await asyncio.sleep(5)
+                                                                                             await self.stop(game.channelid)
+
 
     def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
@@ -183,10 +169,10 @@ class ConnectFourGame(commands.Cog):
                                 c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
                             (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and self.gamefield[r - 2][
                                 c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
-                        return False
+                        return True
                 except:
                     pass
-        return True
+        return False
 
     async def send_gamefield( self ):
         # ggf. altes Spielfeld löschen:
@@ -195,7 +181,7 @@ class ConnectFourGame(commands.Cog):
         # Neue Message erzeugen:
         self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
         # Reaction Buttons hinzufügen:
-        for tag in '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣':
+        for tag in self.emojis.keys():
             await self.gamefield_message.add_reaction( tag )
 
     def build_board(self, gamefield: np.matrix):
