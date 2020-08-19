@@ -72,10 +72,10 @@ class ConnectFourGame(commands.Cog):
         # Spielfeld initial einmal ausgeben:
         self.send_gamefield()
 
-        
+
 # Nachrichten im Spielchannel werden gleich wieder gelöscht:
-@commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+#@commands.Cog.listener()
+async def on_message(self, message: discord.Message):
         if ( self.gamechannel == message.channel  # Unser Channel?
          and self.bot.user != message.author ):   # Nachricht nicht vom Bot?
              await message.delete()               # Dann löschen wir die Nachricht
