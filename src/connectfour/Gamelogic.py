@@ -10,7 +10,6 @@ from GameAPI.PlayerDataApi import Utils
 from discord.ext import commands
 import discord
 
-
 class ConnectFourGameLogic(commands.Cog):
     def __init__(self, queue ):
         self.queue = queue
@@ -23,21 +22,10 @@ class ConnectFourGameLogic(commands.Cog):
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten:
+            # ( in der Game Klasse wird im constructor das Cog-Command registriert,
+            #   daher sollte es eine Referenz bis zur Selbstzerstörung geben )
             ConnectFourGame( player_contexts )
             break
-
-        
-######################################################################################################
-
-
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if ConnectFourGameLogic.channels_in_use.__contains__(message.channel.id):
-            game: ConnectFourGame = ConnectFourGameLogic.channels_in_use.get(message.channel.id)
-            if message.channel.id == game.channelid:
-                if message.author != self.bot.user:
-                    await message.delete()
 
 #######################################################################################################
                     
@@ -87,42 +75,26 @@ class ConnectFourGame(commands.Cog):
         # Spielfeld initial einmal ausgeben:
         self.send_gamefield()
 
+        
+# Nachrichten im Spielchannel werden gleich wieder gelöscht:
+@commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if ( self.gamechannel == message.channel  # Unser Channel?
+         and self.bot.user != message.author ):   # Nachricht nicht vom Bot?
+             await message.delete()               # Dann löschen wir die Nachricht
 
-    async def destroy_game( self ):
-        await self.bot.get_channel(game.channelid).delete()
-        self.bot.remove_cog(game)
-        ConnectFourGameLogic.channels_in_use.pop(channel_id)
-        for player in game.players:
-            self.playing_players.remove(player.id)
-
-
-                                game.aktplayer += 1
-                                if game.aktplayer == 2:
-                                    game.aktplayer = 0
-                                game.last_actions.clear()
-                                game.last_actions[game.players[game.aktplayer]] = time.time()
-
-                        game.is_in_action = False
-                    else:
-                        try:
-                            await payload.message.remove_reaction(payload.emoji, self.bot.get_user(member.id))
-                        except:
-                            return
-                        
-                        
-@commands.Cog.listener() # Action bei drücken eines Reaction-Buttons:
+# Action bei drücken eines Reaction-Buttons: (Spielzug)
+@commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
-        if payload.message == self.gamefield_message: # Ist das add-event für uns?
-            if member == self.players[ self.nextplayer ]: # Der richtige Spieler am Zug?
-                if self.is_in_action == True: # Locking wegen async event
-                    return
-                self.is_in_action = True
-                if not payload.emoji in self.emojis: # Valid emoji?
-                    return
-                await payload.message.remove_reaction(payload.emoji, member) # remove add
-                col = self.emojis.get[ payload.emoji ]
-                # Hier beginnt der eigentliche Spielzug:
-                if self.is_location_valid(col):
+        if ( payload.message == self.gamefield_message     # Ist das add-event für uns?
+         and member == self.players[ self.nextplayer ]     # Der richtige Spieler am Zug?
+         and payload.emoji in self.emojis:                 # Valid emoji?
+         and self.is_in_action == False ):                 # sind wir alleine?
+            self.is_in_action = True
+            await payload.message.remove_reaction(payload.emoji, member) # remove add
+            col = self.emojis.get[ payload.emoji ]
+            # Ist der Zug möglich?
+            if self.is_location_valid(col):
                 row = game.get_next_row(col)
                 game.insert_selected(row, col, self.nextplayer)
                 # Neues spielfeld ausgeben:
@@ -140,7 +112,12 @@ class ConnectFourGame(commands.Cog):
                         await Utils.add_to_stats(player, "ConnectFour", 0, 1)
                     await asyncio.sleep(5)
                     # Selbstzerstörung:
-                    await self.destroy_game()
+                    await self.gamechannel.delete()
+                    self.bot.remove_cog(self)
+                    return
+                else: # Das Spiel geht noch weiter:
+                    game.aktplayer %= 2  # zum anderen Spieler wechseln
+            self.is_in_action = False
 
 
     def insert_selected(self, row, col, playerindex):
