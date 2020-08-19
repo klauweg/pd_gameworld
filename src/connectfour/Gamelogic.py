@@ -74,18 +74,18 @@ class ConnectFourGame(commands.Cog):
 
 
 # Nachrichten im Spielchannel werden gleich wieder gelöscht:
-#@commands.Cog.listener()
-async def on_message(self, message: discord.Message):
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
         if ( self.gamechannel == message.channel  # Unser Channel?
          and self.bot.user != message.author ):   # Nachricht nicht vom Bot?
              await message.delete()               # Dann löschen wir die Nachricht
 
 # Action bei drücken eines Reaction-Buttons: (Spielzug)
-@commands.Cog.listener()
+    @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
         if ( payload.message == self.gamefield_message     # Ist das add-event für uns?
          and member == self.players[ self.nextplayer ]     # Der richtige Spieler am Zug?
-         and payload.emoji in self.emojis:                 # Valid emoji?
+         and payload.emoji in self.emojis                  # Valid emoji?
          and self.is_in_action == False ):                 # sind wir alleine?
             self.is_in_action = True
             await payload.message.remove_reaction(payload.emoji, member) # remove add
