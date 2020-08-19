@@ -10,6 +10,8 @@ from GameAPI.PlayerDataApi import Utils
 from discord.ext import commands
 import discord
 
+channel_prefix = "🔴🔵connectfour-"
+
 class GameControl():
     def __init__(self, queue):
         self.queue = queue
@@ -22,8 +24,7 @@ class GameControl():
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
-            newgame = ConnectFourGame( player_contexts )
-            player_contexts[0].bot.add_cog( newgame )
+            ConnectFourGame( player_contexts )
 
 #######################################################################################################
                     
@@ -43,25 +44,35 @@ class ConnectFourGame(commands.Cog):
         self.nextplayer = 1
         self.is_in_action = False
         self.emojis = { "1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6 }
-        
+
+        self.bot.add_cog( self )
         self.bot.loop.create_task( self.prepare_game() ) # __init__ darf nicht async sein!
         
     async def prepare_game( self ):
+        # Suche ersten freien Channelslot
+        ext_suff = [name.replace(channel_prefix, "") for name in self.bot.get_all_channels() if
+                    name.starts_with(channel_prefix)]
+        sorted_channel_numbers = sorted([int(suff) for suff in ext_suff if suff.isnumeric()])
+        next_channel = len(sorted_channel_numbers) + 1
+        for num in enumerate(sorted_channel_numbers):
+            if num[0] + 1 != num[1]:
+                next_channel = num[0] + 1
+                break
         # Spielchannel erzeugen:
-        self.gamechannel = await guild.create_text_channel(
-                          name="🔴🔵connectfour-" + str(len(ConnectFourGameLogic.channels_in_use) + 1),
-                          category=bot.get_channel(742406887567392878))
+        self.gamechannel = await self.guild.create_text_channel(
+                          name=channel_prefix + str( next_channel ),
+                          category=self.bot.get_channel(742406887567392878))
 
         # Nachricht im Joinchannel:
         embed = discord.Embed(title="Game is starting!",
-                            description="Playing in Channel: **" + gamechannel.name + "** !",
+                            description="Playing in Channel: **" + self.gamechannel.name + "** !",
                             color=0x2dff32)
         embed.set_thumbnail(
                 url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_author(name="ConnectFour",
                              icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.add_field(name="Players",
-                             value=f"""{gameplayers[0].display_name} vs. {gameplayers[1].display_name}""",
+                             value=f"""{self.players[0].display_name} vs. {self.players[1].display_name}""",
                              inline=True)
         embed.set_footer(text="Have fun!")
         await self.joinchannel.send(embed=embed, delete_after=10)
@@ -70,7 +81,7 @@ class ConnectFourGame(commands.Cog):
         self.gamefield = np.zeros((6, 7))
 
         # Spielfeld initial einmal ausgeben:
-        self.send_gamefield()
+        await self.send_gamefield()
 
 
 # Nachrichten im Spielchannel werden gleich wieder gelöscht:
@@ -92,20 +103,20 @@ class ConnectFourGame(commands.Cog):
             col = self.emojis.get[ payload.emoji ]
             # Ist der Zug möglich?
             if self.is_location_valid(col):
-                row = game.get_next_row(col)
-                game.insert_selected(row, col, self.nextplayer)
+                row = self.get_next_row(col)
+                self.insert_selected(row, col, self.nextplayer)
                 # Neues spielfeld ausgeben:
-                self.send_gamefield()
+                await self.send_gamefield()
                 # Hat jemand gewonnen?
                 if self.check_state(self.nextplayer):
                     embed = discord.Embed(
-                             title=":tada: " + self.players[game.nextplayer].name + " won :tada:",
+                             title=":tada: " + self.players[self.nextplayer].name + " won :tada:",
                                         colour=discord.Colour.green())
-                    await self.bot.get_channel(game.channelid).send(embed=embed, delete_after=10)
+                    await self.gamechannel.send(embed=embed, delete_after=10)
                     # Statistik
-                    await Utils.add_xp(game.players[game.aktplayer], 20)
-                    await Utils.add_to_stats(game.players[game.aktplayer], "ConnectFour", 1, 0)
-                    for player in game.players:
+                    await Utils.add_xp(self.players[self.nextplayer], 20)
+                    await Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
+                    for player in self.players:
                         await Utils.add_to_stats(player, "ConnectFour", 0, 1)
                     await asyncio.sleep(5)
                     # Selbstzerstörung:
@@ -113,7 +124,7 @@ class ConnectFourGame(commands.Cog):
                     self.bot.remove_cog(self)
                     return
                 else: # Das Spiel geht noch weiter:
-                    game.aktplayer %= 2  # zum anderen Spieler wechseln
+                    self.nextplayer %= 2  # zum anderen Spieler wechseln
             self.is_in_action = False
 
 
@@ -149,7 +160,7 @@ class ConnectFourGame(commands.Cog):
     async def send_gamefield( self ):
         # ggf. altes Spielfeld löschen:
         if self.gamefield_message:
-            await game.gamefield_message.delete()
+            await self.gamefield_message.delete()
         # Neue Message erzeugen:
         self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
         # Reaction Buttons hinzufügen:
