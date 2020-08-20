@@ -31,4 +31,8 @@ async def get_level(memberid):
     return member_level
 
 async def update_player_nick(member: discord.Member):
-    await member.edit(nick=member.name + " [Lvl: " + str(await get_level(member.id)) + "]")
+    #Owner können nicht genickt werden: Mit try und except wird Error umgangen
+    try:
+        await member.edit(nick=member.name + " [Lvl: " + str(await get_level(member.id)) + "]")
+    except:
+        pass

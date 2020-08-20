@@ -52,6 +52,8 @@ async def on_command_error(ctx, error):
         return
     raise error
 
+client.add_cog(ClearCommand())
+
 token_file = open("../resources/privates.txt")
 client.run(token_file.readline())
 

@@ -12,6 +12,7 @@ import discord
 
 channel_prefix = "🔴🔵connectfour-"
 
+
 class GameControl():
     def __init__(self, queue):
         self.queue = queue
@@ -24,18 +25,19 @@ class GameControl():
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
-            ConnectFourGame( player_contexts )
+            ConnectFourGame(player_contexts)
+
 
 #######################################################################################################
-                    
+
 class ConnectFourGame(commands.Cog):
-    def __init__(self, contexts ):
-        self.players = [ ctx.author for ctx in contexts ] # Extract Players
+    def __init__(self, contexts):
+        self.players = [ctx.author for ctx in contexts]  # Extract Players
         self.bot = contexts[0].bot
         self.guild = contexts[0].guild
         self.joinchannel = contexts[0].channel
 
-        self.gamechannel = None # Wird erst in prepare_game() erzeugt!
+        self.gamechannel = None  # Wird erst in prepare_game() erzeugt!
         self.gamefield = None
         self.gamefield_message = None
 
@@ -43,15 +45,15 @@ class ConnectFourGame(commands.Cog):
         self.column_count = 7
         self.nextplayer = 1
         self.is_in_action = False
-        self.emojis = { "1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6 }
+        self.emojis = {"1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6}
 
-        self.bot.add_cog( self )
-        self.bot.loop.create_task( self.prepare_game() ) # __init__ darf nicht async sein!
-        
-    async def prepare_game( self ):
+        self.bot.add_cog(self)
+        self.bot.loop.create_task(self.prepare_game())  # __init__ darf nicht async sein!
+
+    async def prepare_game(self):
         # Suche ersten freien Channelslot
-        ext_suff = [name.replace(channel_prefix, "") for name in self.bot.get_all_channels() if
-                    name.starts_with(channel_prefix)]
+        ext_suff = [channel.name.replace(channel_prefix, "") for channel in self.bot.get_all_channels() if
+                    channel.name.startswith(channel_prefix)]
         sorted_channel_numbers = sorted([int(suff) for suff in ext_suff if suff.isnumeric()])
         next_channel = len(sorted_channel_numbers) + 1
         for num in enumerate(sorted_channel_numbers):
@@ -60,73 +62,71 @@ class ConnectFourGame(commands.Cog):
                 break
         # Spielchannel erzeugen:
         self.gamechannel = await self.guild.create_text_channel(
-                          name=channel_prefix + str( next_channel ),
-                          category=self.bot.get_channel(742406887567392878))
+            name=channel_prefix + str(next_channel),
+            category=self.bot.get_channel(742406887567392878))
 
         # Nachricht im Joinchannel:
         embed = discord.Embed(title="Game is starting!",
-                            description="Playing in Channel: **" + self.gamechannel.name + "** !",
-                            color=0x2dff32)
+                              description="Playing in Channel: **" + self.gamechannel.name + "** !",
+                              color=0x2dff32)
         embed.set_thumbnail(
-                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_author(name="ConnectFour",
-                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.add_field(name="Players",
-                             value=f"""{self.players[0].display_name} vs. {self.players[1].display_name}""",
-                             inline=True)
+                        value=f"""{self.players[0].display_name} vs. {self.players[1].display_name}""",
+                        inline=True)
         embed.set_footer(text="Have fun!")
         await self.joinchannel.send(embed=embed, delete_after=10)
-           
+
         # Spielfeld erzeugen:
         self.gamefield = np.zeros((6, 7))
 
         # Spielfeld initial einmal ausgeben:
         await self.send_gamefield()
 
-
-# Nachrichten im Spielchannel werden gleich wieder gelöscht:
+    # Nachrichten im Spielchannel werden gleich wieder gelöscht:
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if ( self.gamechannel == message.channel  # Unser Channel?
-         and self.bot.user != message.author ):   # Nachricht nicht vom Bot?
-             await message.delete()               # Dann löschen wir die Nachricht
+        if (self.gamechannel == message.channel  # Unser Channel?
+                and self.bot.user != message.author):  # Nachricht nicht vom Bot?
+            await message.delete()  # Dann löschen wir die Nachricht
 
-# Action bei drücken eines Reaction-Buttons: (Spielzug)
+    # Action bei drücken eines Reaction-Buttons: (Spielzug)
     @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
-        if ( payload.message == self.gamefield_message     # Ist das add-event für uns?
-         and member == self.players[ self.nextplayer ]     # Der richtige Spieler am Zug?
-         and payload.emoji in self.emojis                  # Valid emoji?
-         and self.is_in_action == False ):                 # sind wir alleine?
-            self.is_in_action = True
-            await payload.message.remove_reaction(payload.emoji, member) # remove add
-            col = self.emojis.get[ payload.emoji ]
-            # Ist der Zug möglich?
-            if self.is_location_valid(col):
-                row = self.get_next_row(col)
-                self.insert_selected(row, col, self.nextplayer)
-                # Neues spielfeld ausgeben:
-                await self.send_gamefield()
-                # Hat jemand gewonnen?
-                if self.check_state(self.nextplayer):
-                    embed = discord.Embed(
-                             title=":tada: " + self.players[self.nextplayer].name + " won :tada:",
-                                        colour=discord.Colour.green())
-                    await self.gamechannel.send(embed=embed, delete_after=10)
-                    # Statistik
-                    await Utils.add_xp(self.players[self.nextplayer], 20)
-                    await Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
-                    for player in self.players:
-                        await Utils.add_to_stats(player, "ConnectFour", 0, 1)
-                    await asyncio.sleep(5)
-                    # Selbstzerstörung:
-                    await self.gamechannel.delete()
-                    self.bot.remove_cog(self)
-                    return
-                else: # Das Spiel geht noch weiter:
-                    self.nextplayer %= 2  # zum anderen Spieler wechseln
-            self.is_in_action = False
-
+        if (payload.message.id == self.gamefield_message.id  # Ist das add-event für uns?
+                and member.id == self.players[self.nextplayer].id  # Der richtige Spieler am Zug?
+                and payload.emoji in self.emojis):
+            await payload.message.remove_reaction(payload.emoji, member)  # remove add
+            if self.is_in_action == False:
+                self.is_in_action = True
+                col = self.emojis[payload.emoji]
+                # Ist der Zug möglich?
+                if self.is_location_valid(col):
+                    row = self.get_next_row(col)
+                    self.insert_selected(row, col, self.nextplayer)
+                    # Neues spielfeld ausgeben:
+                    await self.send_gamefield()
+                    # Hat jemand gewonnen?
+                    if self.check_state(self.nextplayer):
+                        embed = discord.Embed(
+                            title=":tada: " + self.players[self.nextplayer].name + " won :tada:",
+                            colour=discord.Colour.green())
+                        await self.gamechannel.send(embed=embed, delete_after=10)
+                        # Statistik#
+                        await Utils.add_xp(self.players[self.nextplayer], 20)
+                        await Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
+                        for player in self.players:
+                            await Utils.add_to_stats(player, "ConnectFour", 0, 1)
+                        await asyncio.sleep(5)
+                        # Selbstzerstörung:
+                        await self.gamechannel.delete()
+                        self.bot.remove_cog(self)
+                        return
+                    else:  # Das Spiel geht noch weiter:
+                        self.nextplayer = (self.nextplayer + 1) % 2
+                self.is_in_action = False
 
     def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
@@ -134,7 +134,7 @@ class ConnectFourGame(commands.Cog):
     def is_location_valid(self, col):
         return self.gamefield[self.row_count - 1][col] == 0
 
-    def get_next_row(self,col):
+    def get_next_row(self, col):
         for r in range(self.row_count):
             if self.gamefield[r][col] == 0:
                 return r
@@ -144,28 +144,34 @@ class ConnectFourGame(commands.Cog):
         for c in range(self.column_count):
             for r in range(self.row_count):
                 try:
-                    if ((self.gamefield[r][c] == piece and self.gamefield[r][c + 1] == piece and self.gamefield[r][c + 2] == piece and
+                    if ((self.gamefield[r][c] == piece and self.gamefield[r][c + 1] == piece and self.gamefield[r][
+                        c + 2] == piece and
                          self.gamefield[r][c + 3] == piece) or
-                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c] == piece and self.gamefield[r + 2][c] == piece and
+                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c] == piece and
+                             self.gamefield[r + 2][c] == piece and
                              self.gamefield[r + 3][c] == piece) or
-                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c + 1] == piece and self.gamefield[r + 2][
-                                c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
-                            (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and self.gamefield[r - 2][
-                                c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
+                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c + 1] == piece and
+                             self.gamefield[r + 2][
+                                 c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
+                            (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and
+                             self.gamefield[r - 2][
+                                 c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
                         return True
                 except:
                     pass
         return False
 
-    async def send_gamefield( self ):
+    async def send_gamefield(self):
         # ggf. altes Spielfeld löschen:
         if self.gamefield_message:
             await self.gamefield_message.delete()
         # Neue Message erzeugen:
         self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
+        self.is_in_action = True
         # Reaction Buttons hinzufügen:
         for tag in self.emojis.keys():
-            await self.gamefield_message.add_reaction( tag )
+            await self.gamefield_message.add_reaction(tag)
+        self.is_in_action = False
 
     def build_board(self, gamefield: np.matrix):
         field_img: Image.Image = Image.open("../resources/connectfour/field.png")
@@ -196,7 +202,3 @@ class ConnectFourGame(commands.Cog):
         file = discord.File(arr)
         file.filename = "field.png"
         return file
-
-
-
-
