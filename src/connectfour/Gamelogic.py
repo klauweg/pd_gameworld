@@ -45,8 +45,8 @@ class Game(commands.Cog):
         self.row_count = 6
         self.column_count = 7
         self.nextplayer = 1
-        self.is_in_action = False
         self.emojis = {"1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6}
+        self.turn_lock = asyncio.Lock() # Mutex für mehrfach ausgeführte reaction adds
 
         self.bot.add_cog(self)
         self.bot.loop.create_task(self.prepare_game())  # __init__ darf nicht async sein!
@@ -95,8 +95,7 @@ class Game(commands.Cog):
                 and member.id == self.players[self.nextplayer].id  # Der richtige Spieler am Zug?
                 and payload.emoji in self.emojis):
             await payload.message.remove_reaction(payload.emoji, member)  # remove add
-            if self.is_in_action == False:
-                self.is_in_action = True
+            with self.turn_lock:
                 col = self.emojis[payload.emoji]
                 # Ist der Zug möglich?
                 if self.is_location_valid(col):
@@ -122,7 +121,6 @@ class Game(commands.Cog):
                         return
                     else:  # Das Spiel geht noch weiter:
                         self.nextplayer = (self.nextplayer + 1) % 2
-                self.is_in_action = False
 
     def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
@@ -163,11 +161,10 @@ class Game(commands.Cog):
             await self.gamefield_message.delete()
         # Neue Message erzeugen:
         self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
-        self.is_in_action = True
-        # Reaction Buttons hinzufügen:
-        for tag in self.emojis.keys():
-            await self.gamefield_message.add_reaction(tag)
-        self.is_in_action = False
+        with self.turn_lock:
+            # Reaction Buttons hinzufügen:
+            for tag in self.emojis.keys():
+                await self.gamefield_message.add_reaction(tag)
 
     def build_board(self, gamefield: np.matrix):
         field_img: Image.Image = Image.open("../resources/connectfour/field.png")
