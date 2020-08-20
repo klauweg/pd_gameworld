@@ -3,6 +3,7 @@ import io
 import time
 
 import numpy as np
+from parse import parse
 from PIL import Image
 
 from GameAPI.Book import Book
@@ -25,12 +26,12 @@ class GameControl():
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
-            ConnectFourGame(player_contexts)
+            Game(player_contexts)
 
 
 #######################################################################################################
 
-class ConnectFourGame(commands.Cog):
+class Game(commands.Cog):
     def __init__(self, contexts):
         self.players = [ctx.author for ctx in contexts]  # Extract Players
         self.bot = contexts[0].bot
@@ -52,14 +53,9 @@ class ConnectFourGame(commands.Cog):
 
     async def prepare_game(self):
         # Suche ersten freien Channelslot
-        ext_suff = [channel.name.replace(channel_prefix, "") for channel in self.bot.get_all_channels() if
-                    channel.name.startswith(channel_prefix)]
-        sorted_channel_numbers = sorted([int(suff) for suff in ext_suff if suff.isnumeric()])
-        next_channel = len(sorted_channel_numbers) + 1
-        for num in enumerate(sorted_channel_numbers):
-            if num[0] + 1 != num[1]:
-                next_channel = num[0] + 1
-                break
+        cparse = lambda channel: parse( channel_prefix+"{:d}", channel.name ) # Parsefunktion für die Channelnames
+        snums = sorted( [ cparse(c)[0] for c in self.bot.get_all_channels() if cparse(c) ] ) # extract
+        next_channel = next( (x[0] for x in enumerate(snums) if x[0]+1 != x[1]), len(snums) ) + 1 #search gap
         # Spielchannel erzeugen:
         self.gamechannel = await self.guild.create_text_channel(
             name=channel_prefix + str(next_channel),
