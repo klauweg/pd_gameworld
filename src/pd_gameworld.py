@@ -2,11 +2,11 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 
+from parse import parse
 from ClearCmd.ClearCommand import ClearCommand
 from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport
-
 
 #from tictactoe.GameLogic import TicTacToeGameLogic
 from connectfour.Gamelogic import GameControl as connectfour_GameControl
@@ -20,6 +20,12 @@ games = {
 #    741835475085557860: [TicTacToeGameLogic],
     743425069216170024: [connectfour_GameControl]
 }
+
+# Alte Gamechannels löschen:
+for channel in client.get_all_channels():
+    if parse( "{}-{:d}", channel.name ):
+        print ( "deleting old gamechannel: "+channel.name
+        #channel.delete()
 
 # Erzeugen der SpieleKontrollObjekte:
 for channelid in games:
