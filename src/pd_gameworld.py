@@ -21,13 +21,8 @@ games = {
     743425069216170024: [connectfour_GameControl]
 }
 
-# Alte Gamechannels löschen:
-for channel in client.get_all_channels():
-    if parse( "{}-{:d}", channel.name ):
-        print ( "deleting old gamechannel: "+channel.name
-        #channel.delete()
 
-# Erzeugen der SpieleKontrollObjekte:
+# Erzeugen der GameQueues und Spielekontrollobjekt koppeln:
 for channelid in games:
     gamequeue = Queue()  # Queue erzeugen
     games[channelid].append(gamequeue) # Die Queue dem Join Channel zuordnen
@@ -58,8 +53,19 @@ async def on_command_error(ctx, error):
         return
     raise error
 
+@client.event
+async def on_ready():
+    # Alte Gamechannels löschen:
+    for channel in client.get_all_channels():
+        if parse("{}-{:d}", channel.name):
+            await channel.delete()
+    for channelid in games:
+        await client.get_channel(channelid).purge()
+
 client.add_cog(ClearCommand())
 
 token_file = open("../resources/privates.txt")
 client.run(token_file.readline())
+
+
 

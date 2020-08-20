@@ -7,7 +7,7 @@ class Queue:
 
     # Neue Spieler in die Queue
     async def append(self, ctx):
-        if ctx.author in Queue.__occupied_players:
+        if False: #ctx.author in Queue.__occupied_players:
             await ctx.channel.send( str( ctx.author ) + " ist schon in einer Queue", delete_after=10)
         else:
             Queue.__occupied_players.append( ctx.author)
