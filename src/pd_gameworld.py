@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 
 from parse import parse
-from ClearCmd.ClearCommand import ClearCommand
 from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport
@@ -27,7 +26,8 @@ for channelid in games:
     gamequeue = Queue()  # Queue erzeugen
     games[channelid].append(gamequeue) # Die Queue dem Join Channel zuordnen
     games[channelid][0](gamequeue) # Spiel mit Kopplung an die Queue erzeugen
-    
+
+
 # Jemand will einem Spiel joinen und landet in der Queue:
 @client.command()
 async def join(ctx: commands.Context):
@@ -38,10 +38,18 @@ async def join(ctx: commands.Context):
         await queue.append(ctx)
 
 
+@client.command()
+async def purge(ctx: commands.Context, *, member: discord.Member = None):
+    role = discord.utils.get(ctx.guild.roles, id=744630374855868456)
+    if role in ctx.author.roles:
+        await ctx.channel.purge()
+
+
 @client.event
 async def on_member_join(member: discord.Member):
     channel = client.get_channel(741965363549569034)
     await channel.send(f"""Welcome to the Server {member.mention} !""")
+
 
 @client.event
 async def on_command_error(ctx, error):
@@ -53,6 +61,7 @@ async def on_command_error(ctx, error):
         return
     raise error
 
+
 @client.event
 async def on_ready():
     # Alte Gamechannels löschen:
@@ -62,7 +71,7 @@ async def on_ready():
     for channelid in games:
         await client.get_channel(channelid).purge()
 
-client.add_cog(ClearCommand())
+client.add_cog(StatsCommand(client))
 
 token_file = open("../resources/privates.txt")
 client.run(token_file.readline())
