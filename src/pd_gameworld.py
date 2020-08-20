@@ -71,7 +71,7 @@ async def on_ready():
     for channelid in games:
         await client.get_channel(channelid).purge()
 
-client.add_cog(StatsCommand(client))
+client.add_cog(StatsCommand())
 
 token_file = open("../resources/privates.txt")
 client.run(token_file.readline())

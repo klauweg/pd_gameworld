@@ -5,16 +5,11 @@ from GameAPI.PlayerDataApi import Utils
 
 
 class StatsCommand(commands.Cog):
-
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
-
     @commands.command()
     async def stats(self, ctx: commands.Context,*, arg):
         await ctx.message.delete()
         if ctx.channel.id == 741835965164814458:
-            guild: discord.Guild = self.bot.get_guild(741823660188500008)
-            member = guild.get_member_named(arg)
+            member = ctx.guild.get_member_named(arg)
             if member is not None:
                 userdata = await Utils.get_player_data(member)
 
