@@ -9,13 +9,13 @@ from bugreport.BugReport import BugReport
 
 #from tictactoe.GameLogic import TicTacToeGameLogic
 from connectfour.Gamelogic import GameControl as connectfour_GameControl
-#from hangman.GameLogic import HangManGameLogic
+from hangman.GameLogic import HangManGameLogic
 
 client = commands.Bot(command_prefix="!")
 
 # join-channelid -> Spieleklasse
 games = {
-#    743463967996903496: [HangManGameLogic],
+    743463967996903496: [HangManGameLogic],
 #    741835475085557860: [TicTacToeGameLogic],
     743425069216170024: [connectfour_GameControl]
 }
