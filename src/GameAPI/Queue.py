@@ -12,7 +12,7 @@ class Queue:
 
     # Wenn sich der Inhalt der Queue verändert:
     def do_on_queue_change( self ):
-        logging.info( self.queuename + "queue changed:" )
+        logging.info( self.queuename + " queue changed:" )
         logging.info( "  queued members: " + str(Queue.__queued_members) )
         logging.info( "  playing members: " + str(Queue.__playing_members) )
         logging.info( "  queue content: " + str(self.queue) )

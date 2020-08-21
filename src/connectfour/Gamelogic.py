@@ -1,6 +1,6 @@
 import asyncio
 import io
-import time
+import logging
 
 import numpy as np
 from parse import parse
@@ -50,10 +50,11 @@ class Game(commands.Cog):
         self.emojis = {"1️⃣": 0, '2️⃣': 1, '3️⃣': 2, '4️⃣': 3, '5️⃣': 4, '6️⃣': 5, "7️⃣": 6}
         self.turn_lock = asyncio.Lock() # Mutex für mehrfach ausgeführte reaction adds
 
-        self.bot.add_cog(self)
-        self.bot.loop.create_task(self.prepare_game())  # __init__ kann nicht async sein!
+        self.running = True
+        self.turnevent = asyncio.Event()
+        self.bot.loop.create_task(self.gametask())
 
-    async def prepare_game(self):
+    async def gametask(self):
         # Suche ersten freien Channelslot
         cparse = lambda channel: parse( channel_prefix+"{:d}", channel.name ) # Parsefunktion für die Channelnames
         snums = sorted( [ cparse(c)[0] for c in self.bot.get_all_channels() if cparse(c) ] ) # extract
@@ -83,6 +84,24 @@ class Game(commands.Cog):
         # Spielfeld initial einmal ausgeben:
         async with self.turn_lock:
             await self.send_gamefield()
+
+        # COG aktivieren:
+        self.bot.add_cog(self)
+
+        # Wir warten auf Spielzüge:
+        while self.running:
+            try:
+                await asyncio.wait_for( self.turnevent.wait(), timeout=60 )
+            except asyncio.TimeoutError:
+                logging.info( "Timeout: Keine Spielzüge mehr, Spiel wird beendet" )
+                break;
+
+        # Spiel beenden:
+        self.queue.release_player(self.players[0].id)
+        self.queue.release_player(self.players[1].id)
+        await self.gamechannel.delete()
+        self.bot.remove_cog(self)
+
 
     # Nachrichten im Spielchannel werden gleich wieder gelöscht:
     @commands.Cog.listener()
@@ -123,13 +142,10 @@ class Game(commands.Cog):
                             await Utils.add_to_stats(player, "ConnectFour", 0, 1)
                         await asyncio.sleep(5)
                         # Selbstzerstörung:
-                        self.queue.release_player( self.players[0].id )
-                        self.queue.release_player( self.players[1].id )
-                        await self.gamechannel.delete()
-                        self.bot.remove_cog(self)
-                        return
+                        self.running = False
                     else:  # Das Spiel geht noch weiter:
                         self.nextplayer = (self.nextplayer + 1) % 2
+            self.turnevent.set() # Watchdog trigger
 
     def insert_selected(self, row, col, playerindex):
         self.gamefield[row][col] = playerindex + 1
