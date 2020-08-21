@@ -42,7 +42,7 @@ class Queue:
             Queue.__queued_members.pop( ctx.author.id )
             self.queue = [ x  for x in self.queue  if x.author.id != ctx.author.id ]
             await ctx.channel.send( str( ctx.author ) + 
-                                    " verlässt die Queue " + self.name, delete_after=10 )
+                                    " verlässt die Queue " + self.queuename, delete_after=10 )
             self.do_on_queue_change()
             
                                     

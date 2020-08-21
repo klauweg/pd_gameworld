@@ -81,7 +81,8 @@ class Game(commands.Cog):
         self.gamefield = np.zeros((6, 7))
 
         # Spielfeld initial einmal ausgeben:
-        await self.send_gamefield()
+        async with self.turn_lock:
+            await self.send_gamefield()
 
     # Nachrichten im Spielchannel werden gleich wieder gelöscht:
     @commands.Cog.listener()
@@ -93,11 +94,15 @@ class Game(commands.Cog):
     # Action bei drücken eines Reaction-Buttons: (Spielzug)
     @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
+        if payload.message.id == self.gamefield_message.id and member.id is not self.bot.user.id:
+            try: # Die Nachricht könnte zwischenzeitlich gelöscht worden sein
+                await payload.message.remove_reaction(payload.emoji, member)  # remove add
+            except:
+                pass
         if (payload.message.id == self.gamefield_message.id  # Ist das add-event für uns?
                 and member.id == self.players[self.nextplayer].id  # Der richtige Spieler am Zug?
                 and payload.emoji in self.emojis):
-            await payload.message.remove_reaction(payload.emoji, member)  # remove add
-            with self.turn_lock:
+            async with self.turn_lock:
                 col = self.emojis[payload.emoji]
                 # Ist der Zug möglich?
                 if self.is_location_valid(col):
@@ -165,10 +170,9 @@ class Game(commands.Cog):
             await self.gamefield_message.delete()
         # Neue Message erzeugen:
         self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.gamefield))
-        with self.turn_lock:
-            # Reaction Buttons hinzufügen:
-            for tag in self.emojis.keys():
-                await self.gamefield_message.add_reaction(tag)
+        # Reaction Buttons hinzufügen:
+        for tag in self.emojis.keys():
+            await self.gamefield_message.add_reaction(tag)
 
     def build_board(self, gamefield: np.matrix):
         field_img: Image.Image = Image.open("../resources/connectfour/field.png")
