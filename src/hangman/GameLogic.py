@@ -11,31 +11,26 @@ from GameAPI.Queue import Queue
 
 from threading import Timer
 from hangman.Game import Game
+from parse import parse
+
+channel_prefix = "🪓hangman-"
 
 
 class HangManGameLogic(commands.Cog):
-    def __init__(self, bot, playing_players):
-        self.playing_players = playing_players
-        self.channels_in_use = {
-        }
-        self.bot: commands.Bot = bot
-        self.queue: Queue = Queue()
-        self.joinchannel = 743463967996903496
+    def __init__(self, queue):
+        self.queue = queue
         self.timer: Timer = None
+        self.queue.add_action = self.check_for_gamestart
 
     #After a player join or a game finsihed do this function
     async def check_for_gamestart(self):
-        if self.queue.__len__() > 1:
-            if self.queue.__len__() == 2:
-                embed = discord.Embed(title="Game is starting...", description="Startet Timer (30 seconds) to allow other players to join in", color=0x58ff46)
-                embed.set_author(name="Hangman", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                await self.bot.get_channel(self.joinchannel).send(embed=embed, delete_after=10)
-                await asyncio.sleep(5)
-                await self.start_game(self.queue.queue)
+        if self.queue.len() >= 2:
+            if self.queue.len() == 2:
+                await asyncio.sleep(5) #TODO: NOCH IN 30 SEKUNDEN UMWANDELN
+                Game(self.queue.queue)
                 return
-            if self.queue.__len__() == 8:
-                await self.start_game(self.queue.queue)
+            if self.queue.len() == 8:
+                Game(self.queue.queue)
                 self.queue.queue.clear()
                 self.timer.cancel()
                 return
@@ -44,170 +39,169 @@ class HangManGameLogic(commands.Cog):
                 self.timer.cancel()
 
 
-    async def start_game(self, players):
-        guild: discord.Guild = self.bot.get_guild(741823660188500008)
-        channel: discord.TextChannel = await guild.create_text_channel(name="🪓hangman-" + str(len(self.channels_in_use) + 1),category=self.bot.get_channel(743386428624601200))
-        channelid = channel.id
+class Game(commands.Cog):
+    def __init__(self, contexts):
+        self.correct_word = None
+        self.players = [ctx.author for ctx in contexts]
+        self.not_guessing_player = None
+        self.joinchannel = contexts[0].channel
+        self.gamechannel = None
+        self.guessed_letters = []
+        self.gamestate = 0
+        self.bot: commands.Bot = contexts[0].bot
+        self.guild = contexts[0].guild
+        self.message: discord.Message = None
+        self.loose_level = 0
+        self.is_in_action = False
+        self.bot.add_cog(self)
 
+        self.bot.loop.create_task(self.prepare_game())  # __init__ darf nicht async sein!
 
-        embed = discord.Embed(title="Game is starting!", description="Game takes place in " + self.bot.get_channel(channelid).name, color=0x58ff46)
-        embed.set_author(name="Hangman", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        playernames = ""
-        for player in players:
-            playernames += (player.display_name + " ")
+    async def prepare_game(self):
+        # Suche ersten freien Channelslot
+        cparse = lambda channel: parse( channel_prefix+"{:d}", channel.name ) # Parsefunktion für die Channelnames
+        snums = sorted( [ cparse(c)[0] for c in self.bot.get_all_channels() if cparse(c) ] ) # extract
+        next_channel = next( (x[0] for x in enumerate(snums) if x[0]+1 != x[1]), len(snums) ) + 1 #search gap
+        # Spielchannel erzeugen:
+        self.gamechannel = await self.guild.create_text_channel(
+            name=channel_prefix + str(next_channel),
+            category=self.bot.get_channel(743386428624601200))
+        # Nachricht im Joinchannel:
+        embed = discord.Embed(title="Game is starting!",description="Playing in Channel: **" + self.gamechannel.name + "** !",color=0x2dff32)
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.add_field(name="Players",value=playernames, inline=True)
-        await self.bot.get_channel(self.joinchannel).send(embed=embed, delete_after=10)
+        embed.set_author(name="ConnectFour",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.add_field(name="Players", value=f"""{self.players[0].display_name} vs. {self.players[1].display_name}""",inline=True)
+        embed.set_footer(text="Have fun!")
+        await self.joinchannel.send(embed=embed, delete_after=10)
 
-        notguessingplayer = random.choice(players)
-        players.remove(notguessingplayer)
+        self.not_guessing_player = random.choice(self.players)
+        self.players.remove(self.not_guessing_player)
 
-        embed = discord.Embed(title="Enter correctword", description="You have to write the word here which the others have to guess (less than 15 characters)")
-        embed.set_author(name="Hangman", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        await notguessingplayer.send(embed=embed, delete_after=30)
+    async def guess(self, letter):
+        self.guessed_letters.append(letter)
 
-        embed = discord.Embed(title="why don't I see anything?", description=notguessingplayer.display_name + " got a private message. he now has to write back the word that the others have to guess", color=0x58ff46)
-        embed.set_author(name="Hangman",
-                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        await self.bot.get_channel(channelid).send(embed=embed, delete_after=120)
+        if letter not in self.correct_word:
+            self.loose_level += 1
 
-        hangmangame = Game(players, channelid, self.bot, notguessingplayer)
-        self.bot.add_cog(hangmangame)
-        self.channels_in_use[channel.id] = hangmangame
+    def is_valid_guess(self, string):
+        valid_guesses = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ö", "Ü", "Ä"]
+        if string in valid_guesses:
+            return True
+        else:
+            return False
+
+    def has_already_guessed(self, letter):
+        if letter in self.guessed_letters:
+            return True
+        else:
+            return False
+
+    def check_finsihed(self):
+        for char in self.correct_word:
+            if self.has_already_guessed(char) == False:
+                return False
+        return True
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if (not self.is_in_action) and (message.author.id is not self.bot.user.id):
+            print("message alone  author")
+            self.is_in_action = True
+            if self.gamestate == 0:
+                if message.channel.type == discord.ChannelType.private and message.author.id == self.not_guessing_player.id:
+                    if message.content.isalpha():
+                        if len(message.content) <= 15:
+                            self.correct_word = message.content.upper()
+                            self.gamestate = 1
+                            await self.gamechannel.purge()
+                            embed = discord.Embed(title="Done!", description="Your can now return to "+self.gamechannel.name+"!",color=0x58ff46)
+                            embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            await self.not_guessing_player.send(embed=embed, delete_after=10)
+
+                            await self.send_gamefield()
+                        else:
+                            embed = discord.Embed(title="Attention", description="Less than 15 characters!",color=0xff4646)
+                            embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            await self.not_guessing_player.send(embed=embed, delete_after=10)
+                    else:
+                        embed = discord.Embed(title="Attention", description="Your word can only contains letters!", color=0xff4646)
+                        embed.set_author(name="Hangman", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        await self.not_guessing_player.send(embed=embed, delete_after=10)
+                else:
+                    await message.delete()
+                self.is_in_action = False
+                return
+            if message.channel.id == self.channelid and message.author.id is not self.not_guessing_player.id and message.author in self.players:
+                await message.delete()
+                if message.content.upper() == self.correct_word:
+                    embed = discord.Embed(title=":tada: " + message.author.display_name + " has guessed the Word! :tada:", description="Thanks for playing!", color=0x58ff46)
+                    embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    await self.gamechannel.send(embed=embed)
+                    await Utils.add_xp(message.author, 30)
+                    await Utils.add_to_stats(message.author, "HangMan", 1, 0)
+                    for player in self.players:
+                        await Utils.add_to_stats(player, "HangMan", 0, 1)
+                    await asyncio.sleep(10)
+                    await self.gamechannel.delete()
+                    self.bot.remove_cog(self)
+                    return
+                elif self.is_valid_guess(message.content.upper()):
+                    if not self.has_already_guessed(message.content.upper()):
+                        await self.guess(message.content.upper())
+                        await self.send_gamefield()
+                        if self.loose_level == 10:
+                            embed = discord.Embed(title="You loose:", description="Hangman was hanged!", color=0x58ff46)
+                            embed.set_author(name="Hangman", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            await self.gamechannel.send(embed=embed)
+                            for player in self.players:
+                                await Utils.add_to_stats(player, "HangMan", 0, 1)
+                            await asyncio.sleep(10)
+                            await self.gamechannel.delete
+                            self.bot.remove_cog(self)
+                self.is_in_action = False
+                return
+            else:
+                self.is_in_action = False
+                try:
+                    await message.delete()
+                except:
+                    return
+        else:
+            try:
+                await message.delete()
+            except:
+                return
+
+    async def send_gamefield(self):
+        # ggf. altes Spielfeld löschen:
+        if self.message:
+            await self.message.delete()
+        self.gamefield_message = await self.gamechannel.send(file=await self.build_board())
 
 
-        return
-
-    async def stop(self, channel_id):
-        await self.bot.get_channel(self.channels_in_use[channel_id].channelid).delete()
-        self.channels_in_use[channel_id].bot.remove_cog(self)
-        self.channels_in_use.pop(channel_id)
-
-    async def build_board(self, game: Game):
+    async def build_board(self):
         field_img: Image.Image = Image.open("../resources/hangman/message.png")
         draw = ImageDraw.Draw(field_img)
         lfont = ImageFont.truetype('../resurces/hangman/arial.ttf', 30)
         arr = io.BytesIO()
-        draw.text((9, 51), game.get_print_string(), (0, 0, 0), font=lfont)
-        draw.text((9, 170), str(game.loose_level*10) + "/100%", (0, 0, 0), font=lfont)
+        draw.text((9, 51), self.get_print_string(), (0, 0, 0), font=lfont)
+        draw.text((9, 170), str(self.loose_level * 10) + "/100%", (0, 0, 0), font=lfont)
         field_img.save(arr, format="png")
         arr.seek(0)
         file = discord.File(arr)
         file.filename = "field.png"
         return file
 
-    @commands.command()
-    async def hangman(self, ctx: commands.Context, *, member: discord.Member = None):
-        member = ctx.author or member
-        await ctx.message.delete()
-        commandchannel = ctx.channel
-        if commandchannel.id == self.joinchannel:
-            if member in self.queue:
-                self.queue.remove(member)
-                embed = discord.Embed(title="See you soon!", description=f"""{member.display_name} left the Queue""",color=0x49ff35)
-                embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                await ctx.channel.send(embed=embed, delete_after=10)
-                self.playing_players.remove(ctx.author.id)
-                return
-
-            if ctx.author.id in self.playing_players:
-                return
-            self.playing_players.append(ctx.author.id)
-            embed = discord.Embed(title="Nice!", description=f"""{member.display_name} Joined the Queue""", color=0x49ff35)
-            embed.set_author(name="Hangman", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.add_field(name="But:", value="It may take a moment for the game to start, so sit back and relax", inline=False)
-            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.set_footer(text="Thanks vor Playing!")
-            await ctx.channel.send(embed=embed, delete_after=10)
-            self.queue.put(member)
-            await self.check_for_gamestart()
-
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        game: Game = None
-        for key in self.channels_in_use:
-            if message.author in self.channels_in_use[key].players or message.author == self.channels_in_use[key].not_guessing_player:
-                game = self.channels_in_use[key]
-                break
-
-        if game is not None:
-            if not game.is_in_action:
-                game.is_in_action = True
-                if game.gamestate == 0:
-                    if message.author == game.not_guessing_player and message.channel.type == discord.ChannelType.private:
-                        if message.content.isalpha():
-                            if len(message.content) <= 15:
-                                game.correct_word = message.content.upper()
-                                game.gamestate = 1
-                                await game.bot.get_channel(game.channelid).purge()
-                                embed = discord.Embed(title="Done!", description="Your can now return to "+game.bot.get_channel(game.channelid).name+"!",color=0x58ff46)
-                                embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                                await game.not_guessing_player.send(embed=embed, delete_after=10)
-
-                                game.message = await game.bot.get_channel(game.channelid).send(file=await self.build_board(game))
-                            else:
-                                embed = discord.Embed(title="Attention", description="Less than 15 characters!",color=0xff4646)
-                                embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                                await game.not_guessing_player_id.send(embed=embed, delete_after=10)
-                        else:
-                            embed = discord.Embed(title="Attention", description="Your word can only contains letters!", color=0xff4646)
-                            embed.set_author(name="Hangman", icon_url = "https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            await game.not_guessing_player_id.send(embed=embed, delete_after=10)
-                    else:
-                        await message.delete()
-                    game.is_in_action = False
-                    return
-                if message.channel.id == game.channelid and message.author is not game.not_guessing_player and message.author in game.players:
-                    await message.delete()
-                    if message.content.upper() == game.correct_word:
-                        embed = discord.Embed(title=":tada: " + message.author.display_name + " has guessed the Word! :tada:", description="Thanks for playing!", color=0x58ff46)
-                        embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                        await game.bot.get_channel(game.channelid).send(embed=embed)
-                        try:
-                            await Utils.add_xp(message.author, 20)
-                        except:
-                            pass
-                        await Utils.add_to_stats(message.author, "HangMan", 1, 0)
-                        for player in game.players:
-                            await Utils.add_to_stats(player, "HangMan", 0, 1)
-                        await asyncio.sleep(10)
-                        await self.stop(game.channelid)
-                        for player in game.players:
-                            self.playing_players.remove(player.id)
-                    elif game.is_valid_guess(message.content.upper()):
-                        if not game.has_already_guessed(message.content.upper()):
-                            await game.message.delete()
-                            await game.guess(message.content.upper())
-                            game.message = await game.bot.get_channel(game.channelid).send(file=await self.build_board(game))
-                            if game.loose_level == 10:
-                                embed = discord.Embed(title="You loose:", description="Hangman was hanged!", color=0x58ff46)
-                                embed.set_author(name="Hangman", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                                await game.bot.get_channel(game.channelid).send(embed=embed)
-                                for player in game.players:
-                                    await Utils.add_to_stats(player, "HangMan", 0, 1)
-                                await asyncio.sleep(10)
-                                await self.stop(game.channelid)
-                                for player in game.players:
-                                    self.playing_players.remove(player.id)
-                    game.is_in_action = False
-                    return
-                else:
-                    game.is_in_action = False
-                    try:
-                        await message.delete()
-                    except:
-                        return
+    def get_print_string(self):
+        print_string = ""
+        for char in self.correct_word:
+            if self.has_already_guessed(char.upper()):
+                print_string += "["+char+"]"
             else:
-                try:
-                    await message.delete()
-                except:
-                    return
+                print_string += "[?]"
+        return print_string
