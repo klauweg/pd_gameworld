@@ -8,9 +8,9 @@ from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport
 
-#from tictactoe.GameLogic import TicTacToeGameLogic
+#import tictactoe.GameLogic
 import connectfour.Gamelogic
-#from hangman.GameLogic import HangManGameLogic
+#import hangman.GameLogic
 
 logging.basicConfig(level=logging.INFO)
 
@@ -20,15 +20,15 @@ client.add_cog(StatsCommand())
 
 # join-channelid -> Spieleklasse, Queuename, (Queue)
 games = {
-#    743463967996903496: [HangManGameLogic, "HangMan" ],
-#    741835475085557860: [TicTacToeGameLogic, "TicTacToe" ],
+#    743463967996903496: [hangman.GameLogic.GameControl, "HangMan" ],
+#    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe" ],
     743425069216170024: [connectfour.Gamelogic.GameControl, "ConnectFour" ]
 }
 
 
 # Erzeugen der GameQueues und Spielekontrollobjekt koppeln:
 for channelid in games:
-    gamequeue = Queue( games.[channelid][1] )  # Queue erzeugen und Namen zuweisen
+    gamequeue = Queue( games[channelid][1] )  # Queue erzeugen und Namen zuweisen
     games[channelid].append(gamequeue) # Die Queue dem Join Channel zuordnen
     games[channelid][0]( gamequeue ) # Gamecontroller des Spiels erzeugen, queue übergeben
 
@@ -38,7 +38,7 @@ for channelid in games:
 async def join(ctx: commands.Context):
     await ctx.message.delete()
     if ctx.channel.id in games:
-        queue = games[ctx.channel.id][1]
+        queue = games[ctx.channel.id][2]
         await queue.append(ctx)
 
         
@@ -47,7 +47,7 @@ async def join(ctx: commands.Context):
 async def leave(ctx: commands.Context):
     await ctx.message.delete()
     if ctx.channel.id in games:
-        queue = games[ctx.channel.id][1]
+        queue = games[ctx.channel.id][2]
         await queue.remove(ctx)
 
 

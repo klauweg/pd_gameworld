@@ -8,13 +8,14 @@ class Queue:
         self.queuename = name
         self.queue = []
         self.on_queue_change = None # Callbackfunktion für die Gamecontroller
+        logging.info( "Queue für "+self.queuename+" erstellt." )
 
     # Wenn sich der Inhalt der Queue verändert:
     def do_on_queue_change( self ):
-        logger.info( self.queuename + "queue changed:" )
-        logger.info( "  queued members: " + str(Queue.__queued_members) )
-        logger.info( "  playing members: " + str(Queue.__playing_members) )
-        logger.info( "  queue content: " + str(self.queue) )
+        logging.info( self.queuename + "queue changed:" )
+        logging.info( "  queued members: " + str(Queue.__queued_members) )
+        logging.info( "  playing members: " + str(Queue.__playing_members) )
+        logging.info( "  queue content: " + str(self.queue) )
         # Die vom Gamecontroller registrierte Callbackfunktion ausführen
         self.on_queue_change()
     
