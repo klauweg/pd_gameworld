@@ -18,25 +18,27 @@ class GameControl():
     def __init__(self, queue):
         self.queue = queue
         # check_for_gamestart action in der queue registrieren:
-        self.queue.add_action = self.check_for_gamestart
+        self.queue.on_queue_change = self.check_for_gamestart
 
     # Spiel erzeugen wenn genug Spieler in der Queue:
-    async def check_for_gamestart(self):
+    def check_for_gamestart(self):
         if self.queue.len() >= 2:
             # ctx objekte aus der queue holen:
             player_contexts = [self.queue.pop(), self.queue.pop()]
             # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
-            Game(player_contexts)
+            Game(player_contexts, self.queue)
 
 
 #######################################################################################################
 
 class Game(commands.Cog):
-    def __init__(self, contexts):
+    def __init__(self, contexts, queue):
         self.players = [ctx.author for ctx in contexts]  # Extract Players
         self.bot = contexts[0].bot
         self.guild = contexts[0].guild
         self.joinchannel = contexts[0].channel
+        
+        self.queue = queue # queue wird gebraucht um Spieler nach Ende zu "releasen"
 
         self.gamechannel = None  # Wird erst in prepare_game() erzeugt!
         self.gamefield = None
@@ -49,7 +51,7 @@ class Game(commands.Cog):
         self.turn_lock = asyncio.Lock() # Mutex für mehrfach ausgeführte reaction adds
 
         self.bot.add_cog(self)
-        self.bot.loop.create_task(self.prepare_game())  # __init__ darf nicht async sein!
+        self.bot.loop.create_task(self.prepare_game())  # __init__ kann nicht async sein!
 
     async def prepare_game(self):
         # Suche ersten freien Channelslot
@@ -116,6 +118,8 @@ class Game(commands.Cog):
                             await Utils.add_to_stats(player, "ConnectFour", 0, 1)
                         await asyncio.sleep(5)
                         # Selbstzerstörung:
+                        self.queue.release_player( self.players[0].id )
+                        self.queue.release_player( self.players[1].id )
                         await self.gamechannel.delete()
                         self.bot.remove_cog(self)
                         return
