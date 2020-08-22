@@ -1,6 +1,5 @@
 import asyncio
 import io
-import logging
 import random
 
 import discord
@@ -8,9 +7,6 @@ from PIL import Image, ImageDraw, ImageFont
 from discord.ext import commands
 
 from GameAPI.PlayerDataApi import Utils
-from GameAPI.Queue import Queue
-
-from threading import Timer
 from parse import parse
 
 channel_prefix = "🪓hangman-"
@@ -83,13 +79,18 @@ class Game(commands.Cog):
         embed = discord.Embed(title="why don't I see anything?",description=self.not_guessing_player.display_name + " got a private message. he now has to write back the word that the others have to guess",color=0x58ff46)
         embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        await self.gamechannel.send(embed=embed, delete_after=120)
+        await self.gamechannel.send(embed=embed, delete_after=60)
+
+        embed = discord.Embed(title="Now,", description="you have to write the word back, that the other players have to guess" + self.gamechannel.name + "!",color=0x58ff46)
+        embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        await self.not_guessing_player.send(embed=embed, delete_after=60)
 
         self.bot.add_cog(self)
 
         while self.running:
             try:
-                await asyncio.wait_for( self.turnevent.wait(), timeout=240 )
+                await asyncio.wait_for( self.turnevent.wait(), timeout=300 )
             except asyncio.TimeoutError:
                 embed = discord.Embed(title="Game Stopped:", description="(Timeout)", color=0x58ff46)
                 embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -99,7 +100,7 @@ class Game(commands.Cog):
 
         for player in self.players:
             await Utils.add_to_stats(player, "HangMan", 0, 1)
-            self.queue.release_player(player)
+            self.queue.release_player(player.id)
         self.bot.remove_cog(self)
         await asyncio.sleep(10)
         await self.gamechannel.delete()

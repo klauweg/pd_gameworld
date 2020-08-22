@@ -9,7 +9,7 @@ from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport
 
-#import tictactoe.GameLogic
+import tictactoe.GameLogic
 import connectfour.Gamelogic
 import hangman.GameLogic
 
@@ -22,7 +22,7 @@ client.add_cog(StatsCommand())
 # join-channelid -> Spieleklasse, Queuename, (Queue)
 games = {
     743463967996903496: [hangman.GameLogic.GameControl, "HangMan" ],
-#    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe" ],
+    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe" ],
     743425069216170024: [connectfour.Gamelogic.GameControl, "ConnectFour" ]
 }
 

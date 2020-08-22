@@ -26,14 +26,16 @@ class Queue:
 
     # Neue Spieler in die Queue
     async def append(self, ctx):
-        if ctx.author.id in Queue.__queued_members:
-            await ctx.channel.send( str( ctx.author ) +
-                                    " ist schon in der queue " + 
-                                    str(Queue.__queued_members[ ctx.author.id ]), delete_after=10)
+        if False:#ctx.author.id in Queue.__queued_members:
+            embed = discord.Embed(title="Error!", description="You are already in the Queue of " + str(Queue.__queued_members[ ctx.author.id ]),color=0x49ff35)
+            embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            await ctx.channel.send(embed=embed, delete_after=10)
         elif ctx.author.id in Queue.__playing_members:
-            await ctx.channel.send( str( ctx.author ) + 
-                                    " spielt schon " + 
-                                    str(Queue.__playing_members[ ctx.author.id ]), delete_after=10)
+            embed = discord.Embed(title="Error!", description="You are already playing in " + str(Queue.__queued_members[ ctx.author.id ]),color=0x49ff35)
+            embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            await ctx.channel.send(embed=embed, delete_after=10)
         else:
             Queue.__queued_members[ ctx.author.id ] = self.queuename
             self.queue.append(ctx)
@@ -59,13 +61,10 @@ class Queue:
 
     def len(self):
         return len(self.queue)
-    
-    # Wenn ein Spiel beendet ist, muss diese funktion aufgerufen werden:
-    # Das kann letztlich das Spiel nur selbst machen, da es möglich ist, dass
-    # Spieler aus einem Spiel ausscheiden, bevor das Spiel komplett beendet ist.
+
     def release_player(self, playerid):
         Queue.__playing_members.pop( playerid )
-        
+
     # Hier holen die Spiele ihre Player (contexte) aus der Queue:
     # Der Member kommt aus der queued liste in die playing liste
     def pop(self):

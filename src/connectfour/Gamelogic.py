@@ -73,7 +73,7 @@ class Game(commands.Cog):
         embed.set_author(name="ConnectFour",
                          icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.add_field(name="Players",
-                        value=f"""{self.players[0].display_name} vs. {self.players[1].display_name}""",
+                        value=f"""{self.players[0].name} vs. {self.players[1].name}""",
                         inline=True)
         embed.set_footer(text="Have fun!")
         await self.joinchannel.send(embed=embed, delete_after=10)
@@ -97,6 +97,9 @@ class Game(commands.Cog):
                 break;
 
         # Spiel beenden:
+        await asyncio.sleep(5)
+        for player in self.players:
+            await Utils.add_to_stats(player, "ConnectFour", 0, 1)
         self.queue.release_player(self.players[0].id)
         self.queue.release_player(self.players[1].id)
         await self.gamechannel.delete()
@@ -138,9 +141,6 @@ class Game(commands.Cog):
                         # Statistik#
                         await Utils.add_xp(self.players[self.nextplayer], 20)
                         await Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
-                        for player in self.players:
-                            await Utils.add_to_stats(player, "ConnectFour", 0, 1)
-                        await asyncio.sleep(5)
                         # Selbstzerstörung:
                         self.running = False
                     else:  # Das Spiel geht noch weiter:

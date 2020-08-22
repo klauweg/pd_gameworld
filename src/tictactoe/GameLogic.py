@@ -1,190 +1,152 @@
+import asyncio
+
 from discord.ext import commands
+from parse import parse
 
 from GameAPI.PlayerDataApi import Utils
-from tictactoe import TicTacToeGame
-from GameAPI.Queue import Queue
 import discord
-from discord.utils import get
 from PIL import Image
 import io
 
+channel_prefix = "🔴🔵tictactoe-"
 
-class TicTacToeGameLogic(commands.Cog):
-    def __init__(self, bot, playing_players):
-        self.playing_players = playing_players
-        self.bot: commands.Bot = bot
-        self.queue: Queue = Queue()
-        self.channels_in_use = {
-            "0": 0
+class GameControl():
+    def __init__(self, queue):
+        self.queue = queue
+        self.queue.on_queue_change = self.check_for_gamestart
+
+    def check_for_gamestart(self):
+        if self.queue.len() >= 2:
+            player_contexts = [self.queue.pop(), self.queue.pop()]
+            Game(player_contexts, self.queue)
+
+class Game(commands.Cog):
+    def __init__(self, contexts, queue):
+        self.players = [ctx.author for ctx in contexts]  # Extract Players
+        self.playerindex = [-1, 1]
+        self.bot = contexts[0].bot
+        self.guild = contexts[0].guild
+        self.joinchannel = contexts[0].channel
+        self.queue = queue
+        self.fields = {
+            "A1": 0, "B1": 1, "C1": 2,
+            "A2": 3, "B2": 4, "C2": 5,
+            "A3": 6, "B3": 7, "C3": 8
         }
-        self.inviteChannel = 741835475085557860
+        self.placedFields = {
+            0: 0, 1: 0, 2: 0,
+            3: 0, 4: 0, 5: 0,
+            6: 0, 7: 0, 8: 0
+        }
+        self.currentPlayer = 0
+        self.gamechannel = None
+        self.gamefield_message = None
+        self.turn_lock = asyncio.Lock()
 
-    @commands.command()
-    async def tictactoe(self, ctx: commands.Context):
-        if ctx.channel.id is not self.inviteChannel and ctx.author.bot is True:
-            return
-        if self.queue.__contains__(ctx.author):
-             self.queue.remove(ctx.author)
-             embed = discord.Embed(title="See you soon!", description=f"""{ctx.author.display_name} left the Queue""",
-                                   color=0x49ff35)
-             embed.set_author(name="ConnectFour",
-                              icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-             embed.set_thumbnail(
-                 url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-             await ctx.channel.send(embed=embed, delete_after=10)
-             self.playing_players.remove(ctx.author.id)
-             return
-        guild: discord.Guild = ctx.guild
+        self.running = True
+        self.turnevent = asyncio.Event()
+        self.bot.loop.create_task(self.gametask())
 
-        if self.queue.__len__() >= 1:
-            channel: discord.TextChannel = await guild.create_text_channel(name="📝tic-tac-toe-" +
-                                                                                str(self.channels_in_use.__len__()),
-                                                                           category=get(guild.categories,
-                                                                                        name="⚔| TIC TAC TOE |⚔"))
-            game = TicTacToeGame.TicTacToeGame([ctx.author, self.queue.get()])
-            game.currentPlayer = game.players[0]
-            game.currentPlayerID = 0
-            self.channels_in_use[channel.id] = game
-            embed = discord.Embed(title="A game was found", description="Your game takes place in channel " +
-                                                                        channel.mention,
-                                  color=0x44df30)
-            embed.set_author(
-                name="TicTacToe", icon_url="https://images-ext-1.discordapp.net/external"
-                                           "/NoSlZoNmSKGQhi63nMjEiVtdTgv7WrPtBk4g9GEiRy8/%3Fsize%3D256/https/cdn"
-                                           ".discordapp.com/app-icons/742032003125346344"
-                                           "/e4f214ec6871417509f6dbdb1d8bee4a.png")
-            embed.set_thumbnail(
-                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png"
-                    "?size=256")
-            embed.add_field(name="Players", value=game.players[0].mention + " vs. " +
-                                                  game.players[1].mention,
-                            inline=True)
-            await ctx.send(embed=embed, delete_after=10)
-            await channel.purge(limit=100)
-            await channel.send(file=await self.build_board(placedFields=game.placedFields))
-        else:
 
-            if ctx.author.id in self.playing_players:
-                await ctx.message.delete()
-                return
-            self.playing_players.append(ctx.author.id)
-            self.queue.put(ctx.author)
-            embed = discord.Embed(title="You joined the queue.",
-                                  description="Please wait a moment until a channel becomes free or another player "
-                                              "joins the queue", color=0x44df30)
-            embed.set_author(name="TicTacToe", icon_url="https://images-ext-1.discordapp.net/external"
-                                                        "/NoSlZoNmSKGQhi63nMjEiVtdTgv7WrPtBk4g9GEiRy8/%3Fsize%3D256"
-                                                        "/https/cdn.discordapp.com/app-icons/742032003125346344"
-                                                        "/e4f214ec6871417509f6dbdb1d8bee4a.png")
+    async def gametask(self):
+        # Suche ersten freien Channelslot
+        cparse = lambda channel: parse( channel_prefix+"{:d}", channel.name ) # Parsefunktion für die Channelnames
+        snums = sorted( [ cparse(c)[0] for c in self.bot.get_all_channels() if cparse(c) ] ) # extract
+        next_channel = next( (x[0] for x in enumerate(snums) if x[0]+1 != x[1]), len(snums) ) + 1 #search gap
+        # Spielchannel erzeugen:
+        self.gamechannel = await self.guild.create_text_channel(
+            name=channel_prefix + str(next_channel),
+            category=self.bot.get_channel(741830130011209779))
 
-            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344"
-                                    "/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            await ctx.send(embed=embed, delete_after=10)
+        # Nachricht im Joinchannel:
+        embed = discord.Embed(title="Game is starting!",description="Playing in Channel: **" + self.gamechannel.name + "** !",color=0x2dff32)
+        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_author(name="TicTacToe",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.add_field(name="Players",value=f"""{self.players[0].name} vs. {self.players[1].name}""",inline=True)
+        embed.set_footer(text="Have fun!")
+        await self.joinchannel.send(embed=embed, delete_after=10)
 
-    # Searches for free channels to play and returns its id.
+        async with self.turn_lock:
+            await self.send_gamefield()
+
+        self.bot.add_cog(self)
+
+        #warten auf Spielzüge:
+        while self.running:
+            try:
+                await asyncio.wait_for( self.turnevent.wait(), timeout=60)
+            except asyncio.TimeoutError:
+                break;
+
+        # Spiel beenden:
+        await asyncio.sleep(5)
+        for player in self.players:
+            await Utils.add_to_stats(player, "TicTacToe", 0, 1)
+        self.queue.release_player(self.players[0].id)
+        self.queue.release_player(self.players[1].id)
+        await self.gamechannel.delete()
+        self.bot.remove_cog(self)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        channel: discord.TextChannel = message.channel
-        # checks if channel is a tic tac toe channel and is actual in a game
-        if message.author.bot is True:
-            return
-        if self.channels_in_use.keys().__contains__(channel.id) and not self.channels_in_use.get(
-                channel.id).is_empty():
-            game: TicTacToeGame.TicTacToeGame = self.channels_in_use.get(channel.id)
-            # checks if player is player of this round
-            if game.players.__contains__(message.author):
-                # checks if its player turn
-                if game.currentPlayer is message.author:
-                    if game.is_working == False:
-                        game.is_working = True
-                        id = game.fields.get(message.content)
-                        # checks if selected field exists
-                        if id is not None:
-                            isPlaced = game.placedFields.get(id) != 99
-                            # checks if field is empty
-                            if not isPlaced:
-                                # set field placed
-                                game.placedFields[id] = game.players.index(game.currentPlayer) + 1
-                                await channel.purge()
-                                await channel.send(file=await self.build_board(game.placedFields))
-                                if game.compute_winner() == 1:
-                                    embed = discord.Embed(title=":tada: Player " + game.players[1].name +
-                                                                " won :tada:",
-                                                          colour=discord.Colour.green())
-                                    await channel.send(embed=embed)
-                                    try:
-                                        await Utils.add_xp(game.players[1], 20)
-                                    except:
-                                        pass
-                                    await Utils.add_to_stats(game.players[1], "TicTacToe", 1, 0)
-                                    for player in game.players:
-                                        await Utils.add_to_stats(player , "TicTacToe", 0, 1)
-                                    await self.stopGame(channel.id)
-                                    game.is_working = False
-                                    for player in game.players:
-                                        self.playing_players.remove(player.id)
-                                    return
-                                elif game.compute_winner() == 0:
-                                    embed = discord.Embed(
-                                        title=":tada: Player " + game.players[0].name + " won :tada:",
-                                        colour=discord.Colour.green())
-                                    await channel.send(embed=embed)
-                                    try:
-                                        await Utils.add_xp(game.players[game.players[0]], 20)
-                                    except:
-                                        pass
-                                    await Utils.add_to_stats(game.players[game.players[0]], "TicTacToe", 1, 0)
-                                    for player in game.players:
-                                        await Utils.add_to_stats(player , "TicTacToe", 0, 1)
-                                    await self.stopGame(channel.id)
-                                    game.is_working = False
-                                    for player in game.players:
-                                        self.playing_players.remove(player.id)
-                                    return
-                                elif game.compute_winner() == -2:
-                                    embed = discord.Embed(title=":crossed_swords:Undecided:crossed_swords: ",
-                                                          color=0xffe605)
-                                    await channel.send(embed=embed)
-                                    try:
-                                        await Utils.add_xp(game.players[game.currentPlayerID], 20)
-                                    except:
-                                        pass
-                                    await Utils.add_to_stats(game.players[game.currentPlayerID], "TicTacToe", 1, 0)
-                                    for player in game.players:
-                                        await Utils.add_to_stats(player , "TicTacToe", 0, 1)
-                                    await self.stopGame(channel.id)
-                                    game.is_working = False
-                                    for player in game.players:
-                                        self.playing_players.remove(player.id)
-                                    return
-                                game.change_to_next_player()
-                                self.channels_in_use[channel.id] = game
-                            game.is_working = False
-                        else:
-                            embed = discord.Embed(title=":loudspeaker: The Field is not valid :loudspeaker:",
-                                                  colour=discord.Colour.red())
-                            await channel.send(embed=embed, delete_after=10)
-                            await message.delete()
-                            game.is_working = False
+        if message.channel.id == self.gamechannel.id and message.author.id is not self.bot.user.id:
+            await message.delete()
+            if message.author.id == self.players[self.currentPlayer].id:
+                async with self.turn_lock:
+                    id = self.fields.get(message.content)
+                    # checks if selected field exists
+                    if id is not None:
+                        field = self.placedFields.get(id)
+                        # checks if field is empty
+                        if field == 0:
+                            # set field placed
+                            self.placedFields[id] = self.playerindex[self.currentPlayer]
+                            await self.send_gamefield()
+                            if self.compute_winner(self.playerindex[self.currentPlayer]):
+                                embed = discord.Embed(title=":tada: Player " + self.players[self.currentPlayer].name +" won :tada:",colour=discord.Colour.green())
+                                await self.gamechannel.send(embed=embed)
+                                Utils.add_xp(self.players[self.currentPlayer], 20)
+                                await Utils.add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0)
+                                self.running = False
+                            elif self.is_undecided():
+                                embed = discord.Embed(title="Undecided",colour=discord.Colour.green())
+                                await self.gamechannel.send(embed=embed)
+                                self.running = False
+                            else:
+                                self.currentPlayer = (self.currentPlayer + 1) % 2
+                    else:
+                        embed = discord.Embed(title=":loudspeaker: The Field is not valid :loudspeaker:",colour=discord.Colour.red())
+                        await self.gamechannel.send(embed=embed, delete_after=2)
 
-                else:
-                    embed = discord.Embed(title=":loudspeaker: It is not your turn :loudspeaker:",
-                                          colour=discord.Colour.red())
-                    await channel.send(embed=embed, delete_after=10)
-                    await message.delete()
-            else:
-                embed = discord.Embed(title=":loudspeaker: You aren't a player of this game. :loudspeaker:",
-                                      colour=discord.Colour.red())
-                await channel.send(embed=embed, delete_after=10)
-                await message.delete()
+    def is_undecided(self):
+        if 0 in list(self.placedFields.values()):
+            return False
+        else:
+            return True
 
-    async def stopGame(self, channel_id):
-        self.channels_in_use.pop(channel_id)
-        channel: discord.TextChannel = self.bot.get_channel(channel_id)
-        await channel.delete()
+    def compute_winner(self, playeri):
+        won = playeri * 3
+        # winning possibilities
+        on_top = self.placedFields[0] + self.placedFields[1] + self.placedFields[2]
+        below = self.placedFields[6] + self.placedFields[7] + self.placedFields[8]
+        left = self.placedFields[0] + self.placedFields[3] + self.placedFields[6]
+        right = self.placedFields[2] + self.placedFields[5] + self.placedFields[8]
+        diagonal_right = self.placedFields[6] + self.placedFields[4] + self.placedFields[2]
+        diagonal_left = self.placedFields[8] + self.placedFields[4] + self.placedFields[0]
+        # winner check
+        if on_top == won or below == won or left == won or right == won or diagonal_right == won or diagonal_left == won:
+            return True
+        #elif not list(self.placedFields.values()).__contains__(0):
+        #    return -2
+        else:
+            return False
 
-    async def build_board(self, placedFields: dict):
+    async def send_gamefield(self):
+        if self.gamefield_message:
+            await self.gamefield_message.delete()
+        self.gamefield_message = await self.gamechannel.send(file=self.build_board(self.placedFields))
+
+    def build_board(self, placedFields: dict):
         field_img: Image.Image = Image.open("../resources/tictactoe/gamefield_universe.png")
         o = Image.open("../resources/tictactoe/o_universe.png")
 
@@ -194,9 +156,9 @@ class TicTacToeGameLogic(commands.Cog):
                   (12, 337), (175, 337), (337, 337)]
 
         for x in list(placedFields.keys()):
-            if placedFields[x] == 1:
+            if placedFields[x] == -1:
                 field_img.paste(X, fields[list(placedFields).index(x)],X)
-            elif placedFields[x] == 2:
+            elif placedFields[x] == 1:
                 field_img.paste(o, fields[list(placedFields).index(x)],o)
 
         arr = io.BytesIO()
