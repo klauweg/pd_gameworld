@@ -1,5 +1,8 @@
 import logging
 
+import discord
+
+
 class Queue:
     __queued_members={}   # member.id -> queuename
     __playing_members={}  # member.id -> gamename (=queuename)
@@ -24,7 +27,7 @@ class Queue:
     # Neue Spieler in die Queue
     async def append(self, ctx):
         if ctx.author.id in Queue.__queued_members:
-            await ctx.channel.send( str( ctx.author ) + 
+            await ctx.channel.send( str( ctx.author ) +
                                     " ist schon in der queue " + 
                                     str(Queue.__queued_members[ ctx.author.id ]), delete_after=10)
         elif ctx.author.id in Queue.__playing_members:
@@ -34,6 +37,10 @@ class Queue:
         else:
             Queue.__queued_members[ ctx.author.id ] = self.queuename
             self.queue.append(ctx)
+            embed = discord.Embed(title="Welcome!", description=f"""{ctx.author.name} joined the Queue""",color=0x49ff35)
+            embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            await ctx.channel.send(embed=embed, delete_after=10)
             self.do_on_queue_change()
 
     # Spieler verlässt die Queue selbst:
@@ -41,8 +48,10 @@ class Queue:
         if ctx.author.id in Queue.__queued_members:
             Queue.__queued_members.pop( ctx.author.id )
             self.queue = [ x  for x in self.queue  if x.author.id != ctx.author.id ]
-            await ctx.channel.send( str( ctx.author ) + 
-                                    " verlässt die Queue " + self.queuename, delete_after=10 )
+            embed = discord.Embed(title="See you soon!", description=f"""{ctx.author.name} left the Queue""",color=0x49ff35)
+            embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            await ctx.channel.send(embed=embed, delete_after=10)
             self.do_on_queue_change()
             
                                     
