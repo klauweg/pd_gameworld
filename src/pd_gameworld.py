@@ -5,6 +5,7 @@ from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from parse import parse
 import logging
 
+from GameAPI.PlayerDataApi import Utils
 from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport

@@ -99,7 +99,7 @@ class Game(commands.Cog):
                 break;
 
         for player in self.players:
-            await Utils.add_to_stats(player, "HangMan", 0, 1)
+            Utils.add_to_stats(player, "HangMan", 0, 1)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)
         await asyncio.sleep(10)
@@ -143,7 +143,7 @@ class Game(commands.Cog):
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     await self.gamechannel.send(embed=embed)
                     await Utils.add_xp(message.author, 30)
-                    await Utils.add_to_stats(message.author, "HangMan", 1, 0)
+                    Utils.add_to_stats(message.author, "HangMan", 1, 0)
                     self.running = False
                 elif self.is_valid_guess(message.content.upper()):
                         self.guess(message.content.upper())

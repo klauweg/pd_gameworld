@@ -99,7 +99,7 @@ class Game(commands.Cog):
         # Spiel beenden:
         await asyncio.sleep(5)
         for player in self.players:
-            await Utils.add_to_stats(player, "ConnectFour", 0, 1)
+            Utils.add_to_stats(player, "ConnectFour", 0, 1)
         self.queue.release_player(self.players[0].id)
         self.queue.release_player(self.players[1].id)
         await self.gamechannel.delete()
@@ -140,7 +140,8 @@ class Game(commands.Cog):
                         await self.gamechannel.send(embed=embed, delete_after=10)
                         # Statistik#
                         await Utils.add_xp(self.players[self.nextplayer], 20)
-                        await Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
+                        Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
+                        Utils.deposit(self.players[self.nextplayer], 50)
                         # Selbstzerstörung:
                         self.running = False
                     else:  # Das Spiel geht noch weiter:
