@@ -5,7 +5,9 @@ from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from parse import parse
 import logging
 
+from GameAPI.Book import Book
 from GameAPI.PlayerDataApi import Utils
+from GameAPI.PlayerDataApi.Utils import get_level
 from GameAPI.Queue import Queue
 from StatsCmd.StatsCommandFile import StatsCommand
 from bugreport.BugReport import BugReport
@@ -13,28 +15,24 @@ from bugreport.BugReport import BugReport
 import tictactoe.GameLogic
 import connectfour.Gamelogic
 import hangman.GameLogic
+import onewordchallange.GameLogic
 
 logging.basicConfig(level=logging.INFO)
 
-client = commands.Bot(command_prefix="!")
+intents = discord.Intents.all()
+client = commands.Bot(command_prefix="!", intents=intents)
 
 client.add_cog(StatsCommand())
 
 # join-channelid -> Spieleklasse, Queuename, (Queue)
 games = {
-    743463967996903496: [hangman.GameLogic.GameControl, "HangMan" ],
-    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe" ],
-    743425069216170024: [connectfour.Gamelogic.GameControl, "ConnectFour" ]
+    743463967996903496: [hangman.GameLogic.GameControl, "Galgenmännchen"],
+    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe"],
+    743425069216170024: [connectfour.Gamelogic.GameControl, "VierGewinnt"],
+    771386889927262248: [onewordchallange.GameLogic.GameControl, "OneWordChallange"]
 }
 
 
-# Erzeugen der GameQueues und Spielekontrollobjekt koppeln:
-for channelid in games:
-    gamequeue = Queue( games[channelid][1] )  # Queue erzeugen und Namen zuweisen
-    games[channelid].append(gamequeue) # Die Queue dem Join Channel zuordnen
-    games[channelid][0]( gamequeue ) # Gamecontroller des Spiels erzeugen, queue übergeben
-
-    
 # Jemand will einem Spiel joinen und landet in der Queue:
 @client.command()
 async def join(ctx: commands.Context):
@@ -43,7 +41,7 @@ async def join(ctx: commands.Context):
         queue = games[ctx.channel.id][2]
         await queue.append(ctx)
 
-        
+
 # Jemand will eine Queue verlassen:
 @client.command()
 async def leave(ctx: commands.Context):
@@ -60,22 +58,61 @@ async def purge(ctx: commands.Context, *, member: discord.Member = None):
     if role in ctx.author.roles:
         await ctx.channel.purge()
 
+# Der Chef darf Channels purgen:
+@client.command()
+async def update_nick(ctx: commands.Context, *, member: discord.Member = None):
+    role = discord.utils.get(ctx.guild.roles, id=744630374855868456)
+    if role in ctx.author.roles:
+        members = ctx.guild.members
+        for member in members:
+            try:
+                await member.edit(nick=member.name + " [Lvl: " + str(get_level(member)) + "]")
+            except discord.Forbidden:
+                pass
+
+
+
+client.remove_command("help")
+
+
+@client.command()
+async def help(ctx: commands.Context):
+    await ctx.message.delete()
+    if ctx.channel.id == 771745879723606107:
+        page1 = "Hey! Schön das du auf diesen Server gefunden hast!!\nKleiner Tipp schalte diesen Server bis auf Erwähnungen stumm, damit du nicht mit Nachrichten vollgespamt wirst :-)"
+        page2 = "Wenn du spielen willst gehe zu dem jeweiligen Channel und schreibe !join um mitzuspielen"
+        page3 = "Um Statistiken von dir bzw. von anderen zu sehen gehe in den Stats channel und schreibe !stats [Spielername]"
+        page4 = 'Wenn du einen Bug gefunden hast schreibe bitte folgendes in den Bug-Report Channel: !bug "your message"! Thanks for helping :-) !'
+        page5 = 'Auf den nächsten Seiten wird erklärt wie die jeweiligen Spiele funktionieren!'
+        page6 = 'TicTacToe:\nWie man ein Feld anklickt wird im Spiel erklährt!\nWas ist TicTacToe?:\nEin 3x3 Spielfeld auf dem du versuchen musst 3 Felder in einer Reihe mit deiner Spielfigur zu markieren!'
+        page7 = 'Vier Gewinnt:\nEin Großes Spielfeld, in dem du versuchen musst 4 Spielsteine deiner Farbe in einer Reihe zu haben!'
+        page8 = 'Hangman:\nEin zufällig ausgewählter Spieler sucht sich ein Wort aus, welches die anderen Erraten müssen! Wenn die Spieler zu oft einen falschen Buchstaben ausprobiert haben ist das Spiel vorbei!'
+        page9 = 'OneWordChallange:\nDer Reihe nach müssen die Spieler wörter aussuchen und daraus einen Satz bilden!'
+        book = Book("Help", [page1, page2, page3, page4, page5, page6, page7, page8, page9], client, 771745879723606107)
+        await book.send_message()
+
 
 # Neue User im Welcome Channel begrüßen:
 @client.event
 async def on_member_join(member: discord.Member):
     channel = client.get_channel(741965363549569034)
-    await channel.send(f"""Welcome to the Server {member.mention} !""")
+    await channel.send(f"""Wilkommen auf **PD-GAMEWORLD** {member.mention} !""")
 
-    
+
 # Nicht existierende oder fehlerhafte Commands werden aus dem Channel gelöscht:
 @client.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except:
+            pass
         return
     if isinstance(error, MissingRequiredArgument):
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except:
+            pass
         return
     raise error
 
@@ -86,16 +123,27 @@ async def on_ready():
     # Alte Gamechannels löschen:
     for channel in client.get_all_channels():
         if parse("{}-{:d}", channel.name):
-            logging.info( "delete "+channel.name )
+            logging.info("delete " + channel.name)
             await channel.delete()
     # Inhalt der Join Channels löschen:
     for channelid in games:
         channel = client.get_channel(channelid)
-        logging.info( "cleanup "+channel.name )
+        logging.info("cleanup " + channel.name)
+        await channel.purge()
+    deletechannels = [771745879723606107, 741835965164814458]
+    for channelid in deletechannels:
+        channel = client.get_channel(channelid)
+        logging.info("cleanup " + channel.name)
         await channel.purge()
 
-        
+    # Erzeugen der GameQueues und Spielekontrollobjekt koppeln:
+    for channelid in games:
+        gamequeue = Queue(games[channelid][1], client.get_channel(channelid))  # Queue erzeugen und Namen zuweisen
+        games[channelid].append(gamequeue)  # Die Queue dem Join Channel zuordnen
+        games[channelid][0](gamequeue)  # Gamecontroller des Spiels erzeugen, queue übergeben
+
+
 with open("../resources/privates.txt") as token_file:
     token = token_file.readline()
-client.run(token)
 
+client.run(token)

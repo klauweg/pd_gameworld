@@ -15,7 +15,7 @@ class StatsCommand(commands.Cog):
                 xp = Utils.get_xp(member)
                 level = Utils.get_level(member)
                 money = Utils.get_money(member)
-                embed = discord.Embed(title="Stats of " + member.name + "!", description="Here are the Stats:",color=0x49ff35)
+                embed = discord.Embed(title="Statistiken von " + member.name + "!", description="Hier sind die Stats:",color=0x49ff35)
                 embed.set_author(name="STATS",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.add_field(name="Xp: " + str(xp) + ", Level: " + str(level) + ", Money: " + str(money), value="---------------------", inline=False)

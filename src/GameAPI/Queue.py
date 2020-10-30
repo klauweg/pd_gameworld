@@ -1,13 +1,18 @@
+import asyncio
 import logging
 
 import discord
+
+from GameAPI.PlayerDataApi import Utils
 
 
 class Queue:
     __queued_members={}   # member.id -> queuename
     __playing_members={}  # member.id -> gamename (=queuename)
     
-    def __init__(self, name):
+    def __init__(self, name, channel):
+        self.channel = channel
+        self.queue_message = None
         self.queuename = name
         self.queue = []
         self.on_queue_change = None # Callbackfunktion für die Gamecontroller
@@ -19,30 +24,49 @@ class Queue:
         logging.info( "  queued members: " + str(Queue.__queued_members) )
         logging.info( "  playing members: " + str(Queue.__playing_members) )
         logging.info( "  queue content: " + str(self.queue) )
+
+        asyncio.create_task(self.send_queue_message())
+
+
         # Die vom Gamecontroller registrierte Callbackfunktion ausführen
         self.on_queue_change()
+
+    async def send_queue_message(self):
+        if self.queue_message:
+            try:
+                await self.queue_message.delete()
+            except:
+                pass
+
+        embed = discord.Embed(title="Queue:", description="", color=0x58ff46)
+        embed.set_author(name="Queue",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.add_field(name="Im Moment in der Queue:",
+                        value=', '.join([ ctx.author.name for ctx in self.queue ]) + " !",
+                        inline=True)
+        self.queue_message = await self.channel.send(embed=embed)
     
 ########## Queue INPUT
 
     # Neue Spieler in die Queue
     async def append(self, ctx):
-        if False:#ctx.author.id in Queue.__queued_members:
-            embed = discord.Embed(title="Error!", description="You are already in the Queue of " + str(Queue.__queued_members[ ctx.author.id ]),color=0x49ff35)
+        if ctx.author.id in Queue.__queued_members:
+            embed = discord.Embed(title="Achtung, " + ctx.author.name +"!", description="Du bist bereits in der Queue von " + str(Queue.__queued_members[ ctx.author.id ]),color=0x49ff35)
             embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            await ctx.channel.send(embed=embed, delete_after=10)
+            await ctx.channel.send(embed=embed, delete_after=7)
         elif ctx.author.id in Queue.__playing_members:
-            embed = discord.Embed(title="Error!", description="You are already playing in " + str(Queue.__queued_members[ ctx.author.id ]),color=0x49ff35)
+            embed = discord.Embed(title="Achtung, " + ctx.author.name +"!", description="Du spielst bereits in " + str(Queue.__playing_members[ ctx.author.id ]),color=0x49ff35)
             embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            await ctx.channel.send(embed=embed, delete_after=10)
+            await ctx.channel.send(embed=embed, delete_after=7)
         else:
             Queue.__queued_members[ ctx.author.id ] = self.queuename
             self.queue.append(ctx)
-            embed = discord.Embed(title="Welcome!", description=f"""{ctx.author.name} joined the Queue""",color=0x49ff35)
+            embed = discord.Embed(title="Nice!", description=f"""{ctx.author.name} hat die Queue betreten""",color=0x49ff35)
             embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            await ctx.channel.send(embed=embed, delete_after=10)
+            await ctx.channel.send(embed=embed, delete_after=3)
             self.do_on_queue_change()
 
     # Spieler verlässt die Queue selbst:
@@ -50,10 +74,10 @@ class Queue:
         if ctx.author.id in Queue.__queued_members:
             Queue.__queued_members.pop( ctx.author.id )
             self.queue = [ x  for x in self.queue  if x.author.id != ctx.author.id ]
-            embed = discord.Embed(title="See you soon!", description=f"""{ctx.author.name} left the Queue""",color=0x49ff35)
+            embed = discord.Embed(title="Bis bald!", description=f"""{ctx.author.name} hat die Queue verlassen""",color=0x49ff35)
             embed.set_author(name=self.queuename,icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            await ctx.channel.send(embed=embed, delete_after=10)
+            await ctx.channel.send(embed=embed, delete_after=3)
             self.do_on_queue_change()
             
                                     

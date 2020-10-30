@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+from itertools import chain
 
 import numpy as np
 from parse import parse
@@ -11,7 +12,7 @@ from GameAPI.PlayerDataApi import Utils
 from discord.ext import commands
 import discord
 
-channel_prefix = "🔴🔵connectfour-"
+channel_prefix = "🔴🔵viergewinnt-"
 
 
 class GameControl():
@@ -65,18 +66,23 @@ class Game(commands.Cog):
             category=self.bot.get_channel(742406887567392878))
 
         # Nachricht im Joinchannel:
-        embed = discord.Embed(title="Game is starting!",
-                              description="Playing in Channel: **" + self.gamechannel.name + "** !",
+        embed = discord.Embed(title="Spiel startet!",
+                              description="Es wird gespielt in: **" + self.gamechannel.name + "** !",
                               color=0x2dff32)
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_author(name="ConnectFour",
+        embed.set_author(name="VierGewinnt",
                          icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.add_field(name="Players",
+        embed.add_field(name="Spieler",
                         value=f"""{self.players[0].name} vs. {self.players[1].name}""",
                         inline=True)
-        embed.set_footer(text="Have fun!")
+        embed.set_footer(text="Viel Spaß!")
         await self.joinchannel.send(embed=embed, delete_after=10)
+
+        embed = discord.Embed(title="Also, " + self.players[self.nextplayer].display_name + " bitte beginne!",description="",color=0x58ff46)
+        embed.set_author(name="VierGewinnt",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        await self.gamechannel.send(embed=embed, delete_after=30)
 
         # Spielfeld erzeugen:
         self.gamefield = np.zeros((6, 7))
@@ -98,11 +104,11 @@ class Game(commands.Cog):
 
         # Spiel beenden:
         await asyncio.sleep(5)
+        await self.gamechannel.delete()
         for player in self.players:
             Utils.add_to_stats(player, "ConnectFour", 0, 1)
-        self.queue.release_player(self.players[0].id)
-        self.queue.release_player(self.players[1].id)
-        await self.gamechannel.delete()
+            await Utils.add_xp(player, 5)
+            self.queue.release_player(player.id)
         self.bot.remove_cog(self)
 
 
@@ -111,7 +117,10 @@ class Game(commands.Cog):
     async def on_message(self, message: discord.Message):
         if (self.gamechannel == message.channel  # Unser Channel?
                 and self.bot.user != message.author):  # Nachricht nicht vom Bot?
-            await message.delete()  # Dann löschen wir die Nachricht
+            try:
+                await message.delete()  # Dann löschen wir die Nachricht
+            except:
+                pass
 
     # Action bei drücken eines Reaction-Buttons: (Spielzug)
     @commands.Cog.listener()
@@ -135,16 +144,23 @@ class Game(commands.Cog):
                     # Hat jemand gewonnen?
                     if self.check_state(self.nextplayer):
                         embed = discord.Embed(
-                            title=":tada: " + self.players[self.nextplayer].name + " won :tada:",
+                            title=":tada: " + self.players[self.nextplayer].name + " hat gewonnen :tada:",
                             colour=discord.Colour.green())
                         await self.gamechannel.send(embed=embed, delete_after=10)
                         # Statistik#
-                        await Utils.add_xp(self.players[self.nextplayer], 20)
-                        Utils.add_to_stats(self.players[self.nextplayer], "ConnectFour", 1, 0)
-                        Utils.deposit(self.players[self.nextplayer], 50)
+                        await Utils.add_xp(self.players[self.nextplayer], 25)
+                        Utils.add_to_stats(self.players[self.nextplayer], "VierGewinnt", 1, 0)
+                        Utils.deposit_money(self.players[self.nextplayer], 20)
                         # Selbstzerstörung:
                         self.running = False
-                    else:  # Das Spiel geht noch weiter:
+                    elif not 0 in chain(*self.gamefield):
+                        embed = discord.Embed(
+                            title="Undecided",
+                            colour=discord.Colour.green())
+                        await self.gamechannel.send(embed=embed, delete_after=10)
+                        # Selbstzerstörung:
+                        self.running = False
+                    else:
                         self.nextplayer = (self.nextplayer + 1) % 2
             self.turnevent.set() # Watchdog trigger
 
@@ -166,16 +182,16 @@ class Game(commands.Cog):
                 try:
                     if ((self.gamefield[r][c] == piece and self.gamefield[r][c + 1] == piece and self.gamefield[r][
                         c + 2] == piece and
-                         self.gamefield[r][c + 3] == piece) or
-                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c] == piece and
-                             self.gamefield[r + 2][c] == piece and
-                             self.gamefield[r + 3][c] == piece) or
-                            (self.gamefield[r][c] == piece and self.gamefield[r + 1][c + 1] == piece and
-                             self.gamefield[r + 2][
-                                 c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
-                            (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and
-                             self.gamefield[r - 2][
-                                 c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
+                        self.gamefield[r][c + 3] == piece) or
+                        (self.gamefield[r][c] == piece and self.gamefield[r + 1][c] == piece and
+                         self.gamefield[r + 2][c] == piece and
+                         self.gamefield[r + 3][c] == piece) or
+                        (self.gamefield[r][c] == piece and self.gamefield[r + 1][c + 1] == piece and
+                         self.gamefield[r + 2][
+                             c + 2] == piece and self.gamefield[r + 3][c + 3] == piece) or
+                        (self.gamefield[r][c] == piece and self.gamefield[r - 1][c + 1] == piece and
+                         self.gamefield[r - 2][
+                             c + 2] == piece and self.gamefield[r - 3][c + 3] == piece)):
                         return True
                 except:
                     pass

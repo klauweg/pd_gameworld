@@ -26,18 +26,18 @@ def get_level(member):
 
 
 async def update_player_nick(member: discord.Member):
-    #Owner können nicht genickt werden: Mit try und except wird Error umgangen
     try:
-        await member.edit(nick=member.name + " [Lvl: " + str(await get_level(member.id)) + "]")
-    except:
+        await member.edit(nick=member.name + " [Lvl: " + str(get_level(member)) + "]")
+    except discord.Forbidden:
         pass
+
 
 
 ############################ Stats
 
 def add_to_stats(member, game_name, wins=0, played=0):
     userdata = getuser(member.id)
-    stats = userdata.getI("stats", {})
+    stats = userdata.get("stats", {})
     stats[game_name] = [x + y for x, y in zip(stats.get(game_name, [0, 0]), [wins, played])]
     userdata["stats"] = stats
     setuser(member.id, userdata)

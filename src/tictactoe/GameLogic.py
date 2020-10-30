@@ -59,12 +59,25 @@ class Game(commands.Cog):
             category=self.bot.get_channel(741830130011209779))
 
         # Nachricht im Joinchannel:
-        embed = discord.Embed(title="Game is starting!",description="Playing in Channel: **" + self.gamechannel.name + "** !",color=0x2dff32)
+        embed = discord.Embed(title="Game startet!",description="Es wird gespielt in: **" + self.gamechannel.name + "** !",color=0x2dff32)
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_author(name="TicTacToe",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.add_field(name="Players",value=f"""{self.players[0].name} vs. {self.players[1].name}""",inline=True)
-        embed.set_footer(text="Have fun!")
+        embed.add_field(name="Spieler",value=f"""{self.players[0].name} vs. {self.players[1].name}""",inline=True)
+        embed.set_footer(text="Viel Spaß!")
         await self.joinchannel.send(embed=embed, delete_after=10)
+
+        embed = discord.Embed(title="Also, " + self.players[self.currentPlayer].display_name + " bitte beginne!",description="",color=0x58ff46)
+        embed.set_author(name="TicTacToe",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.add_field(name="Wie wähle ich ein Feld aus?",
+                        value="A1   B1   C1\n"
+                             +"A2  B2  C2\n"
+                             +"A3  B3  C3",
+                        inline=True)
+        embed.add_field(name="Und jetzt?",
+                        value="Jenachdem welches Feld du nehmen willst schreibst du das in diesen Channel!",
+                        inline=True)
+        await self.gamechannel.send(embed=embed, delete_after=30)
 
         async with self.turn_lock:
             await self.send_gamefield()
@@ -74,16 +87,20 @@ class Game(commands.Cog):
         #warten auf Spielzüge:
         while self.running:
             try:
-                await asyncio.wait_for( self.turnevent.wait(), timeout=60)
+                await asyncio.wait_for( self.turnevent.wait(), timeout=300)
             except asyncio.TimeoutError:
+                embed = discord.Embed(title="Game Gestoppt:", description="(Timeout)", color=0x58ff46)
+                embed.set_author(name="TicTacToe",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await self.gamechannel.send(embed=embed)
                 break;
 
         # Spiel beenden:
-        await asyncio.sleep(5)
         for player in self.players:
             Utils.add_to_stats(player, "TicTacToe", 0, 1)
-        self.queue.release_player(self.players[0].id)
-        self.queue.release_player(self.players[1].id)
+            await Utils.add_xp(player, 5)
+            self.queue.release_player(player.id)
+        await asyncio.sleep(5)
         await self.gamechannel.delete()
         self.bot.remove_cog(self)
 
@@ -93,7 +110,7 @@ class Game(commands.Cog):
             await message.delete()
             if message.author.id == self.players[self.currentPlayer].id:
                 async with self.turn_lock:
-                    id = self.fields.get(message.content)
+                    id = self.fields.get(message.content.upper())
                     # checks if selected field exists
                     if id is not None:
                         field = self.placedFields.get(id)
@@ -103,10 +120,11 @@ class Game(commands.Cog):
                             self.placedFields[id] = self.playerindex[self.currentPlayer]
                             await self.send_gamefield()
                             if self.compute_winner(self.playerindex[self.currentPlayer]):
-                                embed = discord.Embed(title=":tada: Player " + self.players[self.currentPlayer].name +" won :tada:",colour=discord.Colour.green())
+                                embed = discord.Embed(title=":tada: Player " + self.players[self.currentPlayer].name +" hat gewonnen :tada:",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
                                 await Utils.add_xp(self.players[self.currentPlayer], 20)
                                 Utils.add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0)
+                                Utils.deposit_money(self.players[self.currentPlayer], 10)
                                 self.running = False
                             elif self.is_undecided():
                                 embed = discord.Embed(title="Undecided",colour=discord.Colour.green())
@@ -115,8 +133,9 @@ class Game(commands.Cog):
                             else:
                                 self.currentPlayer = (self.currentPlayer + 1) % 2
                     else:
-                        embed = discord.Embed(title=":loudspeaker: The Field is not valid :loudspeaker:",colour=discord.Colour.red())
+                        embed = discord.Embed(title=":loudspeaker: Kein erlaubtes Feld :loudspeaker:",colour=discord.Colour.red())
                         await self.gamechannel.send(embed=embed, delete_after=2)
+                self.turnevent.set()
 
     def is_undecided(self):
         if 0 in list(self.placedFields.values()):
@@ -131,13 +150,14 @@ class Game(commands.Cog):
         below = self.placedFields[6] + self.placedFields[7] + self.placedFields[8]
         left = self.placedFields[0] + self.placedFields[3] + self.placedFields[6]
         right = self.placedFields[2] + self.placedFields[5] + self.placedFields[8]
+        middle_top = self.placedFields[1] + self.placedFields[4] + self.placedFields[7]
+        middle_left = self.placedFields[3] + self.placedFields[4] + self.placedFields[5]
+        below = self.placedFields[6] + self.placedFields[7] + self.placedFields[8]
         diagonal_right = self.placedFields[6] + self.placedFields[4] + self.placedFields[2]
         diagonal_left = self.placedFields[8] + self.placedFields[4] + self.placedFields[0]
         # winner check
-        if on_top == won or below == won or left == won or right == won or diagonal_right == won or diagonal_left == won:
+        if middle_top == won or middle_left == won or on_top == won or below == won or left == won or right == won or diagonal_right == won or diagonal_left == won:
             return True
-        #elif not list(self.placedFields.values()).__contains__(0):
-        #    return -2
         else:
             return False
 

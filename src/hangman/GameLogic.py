@@ -9,7 +9,7 @@ from discord.ext import commands
 from GameAPI.PlayerDataApi import Utils
 from parse import parse
 
-channel_prefix = "🪓hangman-"
+channel_prefix = "🪓galgenmännchen-"
 
 
 class GameControl():
@@ -66,23 +66,22 @@ class Game(commands.Cog):
         self.gamechannel = await self.guild.create_text_channel(name=channel_prefix + str(next_channel),category=self.bot.get_channel(743386428624601200))
 
         # Nachricht im Joinchannel:
-        embed = discord.Embed(title="Game is starting!",description="Playing in Channel: **" + self.gamechannel.name + "** !",color=0x2dff32)
+        embed = discord.Embed(title="Game startet!",description="Es wird gespielt in: **" + self.gamechannel.name + "** !",color=0x2dff32)
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_author(name="ConnectFour",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.add_field(name="Players", value=f"""{self.players[0].display_name} vs. {self.players[1].display_name}""",inline=True)
-        embed.set_footer(text="Have fun!")
+        embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed.set_footer(text="Viel Spaß!")
         await self.joinchannel.send(embed=embed, delete_after=10)
 
         self.not_guessing_player = random.choice(self.players)
         self.players.remove(self.not_guessing_player)
 
-        embed = discord.Embed(title="why don't I see anything?",description=self.not_guessing_player.display_name + " got a private message. he now has to write back the word that the others have to guess",color=0x58ff46)
-        embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed = discord.Embed(title="Warum sehe ich nichts?",description=self.not_guessing_player.display_name + " hat eine Private nachricht bekommen. Dort muss er das Wort eingeben welches die anderen erraten müssen",color=0x58ff46)
+        embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         await self.gamechannel.send(embed=embed, delete_after=60)
 
-        embed = discord.Embed(title="Now,", description="you have to write the word back, that the other players have to guess" + self.gamechannel.name + "!",color=0x58ff46)
-        embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed = discord.Embed(title="Jetzt,", description="musst du das Wort zurückschreiben welches die anderen in " + self.gamechannel.name + " erraten sollen!",color=0x58ff46)
+        embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         await self.not_guessing_player.send(embed=embed, delete_after=60)
 
@@ -92,15 +91,17 @@ class Game(commands.Cog):
             try:
                 await asyncio.wait_for( self.turnevent.wait(), timeout=300 )
             except asyncio.TimeoutError:
-                embed = discord.Embed(title="Game Stopped:", description="(Timeout)", color=0x58ff46)
-                embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = discord.Embed(title="Game gestoppt:", description="(Timeout)", color=0x58ff46)
+                embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 await self.gamechannel.send(embed=embed)
                 break;
 
+        self.queue.release_player(self.not_guessing_player.id)
         for player in self.players:
             Utils.add_to_stats(player, "HangMan", 0, 1)
             self.queue.release_player(player.id)
+            await Utils.add_xp(player, 5)
         self.bot.remove_cog(self)
         await asyncio.sleep(10)
         await self.gamechannel.delete()
@@ -117,43 +118,47 @@ class Game(commands.Cog):
                         self.correct_word = message.content.upper()
                         self.gamestate = 1
                         await self.gamechannel.purge()
-                        embed = discord.Embed(title="Done!", description="Your can now return to " + self.gamechannel.name + "!",color=0x58ff46)
-                        embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed = discord.Embed(title="Done!", description="Du kannst nun zu " + self.gamechannel.name + " zurückkehren!",color=0x58ff46)
+                        embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await self.not_guessing_player.send(embed=embed, delete_after=10)
                         await self.send_gamefield()
                         self.gamestate = 1
                     else:
-                        embed = discord.Embed(title="Attention", description="Less than 15 characters!", color=0xff4646)
-                        embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed = discord.Embed(title="Achtung", description=" Weniger als 15 Buchstaben!", color=0xff4646)
+                        embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await self.not_guessing_player.send(embed=embed, delete_after=10)
                 else:
-                    embed = discord.Embed(title="Attention", description="Your word can only contains letters!",color=0xff4646)
-                    embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed = discord.Embed(title="Achtung", description="Dein Word darf nur Buchstaben enthalten!",color=0xff4646)
+                    embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     await self.not_guessing_player.send(embed=embed, delete_after=10)
                 self.turnevent.set()
                 return
         elif self.gamestate == 1:
-            if message.channel.id == self.gamechannel and message.author.id is not self.not_guessing_player.id and message.author in self.players:
+            if message.channel.id == self.gamechannel.id and message.author.id is not self.not_guessing_player.id and message.author in self.players:
                 if message.content.upper() == self.correct_word:
-                    embed = discord.Embed(title=":tada: " + message.author.display_name + " has guessed the Word! :tada:",description="Thanks for playing!", color=0x58ff46)
-                    embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed = discord.Embed(title=":tada: " + message.author.display_name + " hat das Wort erraten! :tada:",description="Danke fürs Spielen!", color=0x58ff46)
+                    embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     await self.gamechannel.send(embed=embed)
                     await Utils.add_xp(message.author, 30)
                     Utils.add_to_stats(message.author, "HangMan", 1, 0)
+                    Utils.deposit_money(message.author, 20)
                     self.running = False
                 elif self.is_valid_guess(message.content.upper()):
-                        self.guess(message.content.upper())
-                        await self.send_gamefield()
-                        if self.loose_level == 10:
-                            embed = discord.Embed(title="You loose:", description="Hangman was hanged!", color=0x58ff46)
-                            embed.set_author(name="Hangman",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            await self.gamechannel.send(embed=embed)
-                            self.running = False
+                    self.guess(message.content.upper())
+                    await self.send_gamefield()
+                    if self.loose_level == 10:
+                        embed = discord.Embed(title="Du hast verloren:", description="Hangman wurde erhängt!", color=0x58ff46)
+                        embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        await self.gamechannel.send(embed=embed)
+                        await Utils.add_xp(self.not_guessing_player, 30)
+                        Utils.add_to_stats(self.not_guessing_player, "HangMan", 1, 0)
+                        Utils.deposit_money(self.not_guessing_player, 20)
+                        self.running = False
                 self.turnevent.set()
                 return
 
