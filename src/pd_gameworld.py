@@ -66,7 +66,7 @@ async def help(ctx: commands.Context):
         page3 = "Um Statistiken von dir bzw. von anderen zu sehen gehe in den Stats channel und schreibe !stats [Spielername]"
         page4 = 'Willst du Haustiere gewinnen um tolle Xp-Multiplikatoren oder Money-Multiplikatoren zu bekommen? Gehe in den Haustier Channel und schreibe !pet (kostet anfangs 200 Money). Deine Haustiere kannst du sehen indem du im Haustier Channel !pets schreibst!'
         page5 = 'Wenn du einen Bug gefunden hast schreibe bitte folgendes in den Bug-Report Channel: !bug "your message"! Thanks for helping :-) !'
-        page6 = 'Auf den nächsten Seiten wird erklärt wie die jeweiligen Spiele funktionieren!'
+        page6 = 'Auf den nächsten Seiten wird erklärt wie die jeweiligen Spiele funktionieren! ->'
         page7 = 'TicTacToe:\nWie man ein Feld anklickt wird im Spiel erklährt!\nWas ist TicTacToe?:\nEin 3x3 Spielfeld auf dem du versuchen musst 3 Felder in einer Reihe mit deiner Spielfigur zu markieren!'
         page8 = 'Vier Gewinnt:\nEin Großes Spielfeld, in dem du versuchen musst 4 Spielsteine deiner Farbe in einer Reihe zu haben!'
         page9 = 'Hangman:\nEin zufällig ausgewählter Spieler sucht sich ein Wort aus, welches die anderen Erraten müssen! Wenn die Spieler zu oft einen falschen Buchstaben ausprobiert haben ist das Spiel vorbei!'
