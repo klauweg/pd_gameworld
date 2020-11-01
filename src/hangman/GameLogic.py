@@ -98,11 +98,13 @@ class Game(commands.Cog):
                 await self.gamechannel.send(embed=embed)
                 break;
 
-        self.queue.release_player(self.not_guessing_player.id)
         for player in self.players:
             add_to_stats(player, "HangMan", 0, 1)
             await add_xp(player, 5)
             self.queue.release_player(player.id)
+        add_xp(self.not_guessing_player, 5)
+        add_to_stats(self.not_guessing_player,"HangMan", 0,1)
+        self.queue.release_player(self.not_guessing_player.id)
         self.bot.remove_cog(self)
         await asyncio.sleep(10)
         await self.gamechannel.delete()
