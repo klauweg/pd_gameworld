@@ -33,18 +33,26 @@ class Queue:
 
     async def send_queue_message(self):
         if self.queue_message:
+            embed = discord.Embed(title="Queue:", description="", color=0x58ff46)
+            embed.set_author(name="Queue",
+                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.add_field(name="Im Moment in der Queue:",
+                            value=', '.join([ctx.author.name for ctx in self.queue]) + " !",
+                            inline=True)
             try:
-                await self.queue_message.delete()
+                await self.queue_message.edit(embed=embed)
             except:
                 pass
-
-        embed = discord.Embed(title="Queue:", description="", color=0x58ff46)
-        embed.set_author(name="Queue",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.add_field(name="Im Moment in der Queue:",
-                        value=', '.join([ ctx.author.name for ctx in self.queue ]) + " !",
-                        inline=True)
-        self.queue_message = await self.channel.send(embed=embed)
+        else:
+            embed = discord.Embed(title="Queue:", description="", color=0x58ff46)
+            embed.set_author(name="Queue",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.add_field(name="Im Moment in der Queue:",
+                            value=', '.join([ ctx.author.name for ctx in self.queue ]) + " !",
+                            inline=True)
+            self.queue_message = await self.channel.send(embed=embed)
     
 ########## Queue INPUT
 

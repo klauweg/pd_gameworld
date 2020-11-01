@@ -6,8 +6,9 @@ import discord
 from PIL import Image, ImageDraw, ImageFont
 from discord.ext import commands
 
-from GameAPI.PlayerDataApi import Utils
 from parse import parse
+
+from GameAPI.user_extension import add_to_stats, add_xp, deposit_money
 
 channel_prefix = "🪓galgenmännchen-"
 
@@ -99,9 +100,9 @@ class Game(commands.Cog):
 
         self.queue.release_player(self.not_guessing_player.id)
         for player in self.players:
-            Utils.add_to_stats(player, "HangMan", 0, 1)
+            add_to_stats(player, "HangMan", 0, 1)
+            await add_xp(player, 5)
             self.queue.release_player(player.id)
-            await Utils.add_xp(player, 5)
         self.bot.remove_cog(self)
         await asyncio.sleep(10)
         await self.gamechannel.delete()
@@ -143,9 +144,9 @@ class Game(commands.Cog):
                     embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     await self.gamechannel.send(embed=embed)
-                    await Utils.add_xp(message.author, 30)
-                    Utils.add_to_stats(message.author, "HangMan", 1, 0)
-                    Utils.deposit_money(message.author, 20)
+                    await add_xp(message.author, 30)
+                    add_to_stats(message.author, "HangMan", 1, 0)
+                    deposit_money(message.author, 20)
                     self.running = False
                 elif self.is_valid_guess(message.content.upper()):
                     self.guess(message.content.upper())
@@ -155,9 +156,9 @@ class Game(commands.Cog):
                         embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await self.gamechannel.send(embed=embed)
-                        await Utils.add_xp(self.not_guessing_player, 30)
-                        Utils.add_to_stats(self.not_guessing_player, "HangMan", 1, 0)
-                        Utils.deposit_money(self.not_guessing_player, 20)
+                        await add_xp(self.not_guessing_player, 30)
+                        add_to_stats(self.not_guessing_player, "HangMan", 1, 0)
+                        deposit_money(self.not_guessing_player, 20)
                         self.running = False
                 self.turnevent.set()
                 return

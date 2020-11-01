@@ -1,13 +1,14 @@
 import asyncio
-import io
+
 import random
 
 import discord
-from PIL import Image, ImageDraw, ImageFont
+
 from discord.ext import commands
 
-from GameAPI.PlayerDataApi import Utils
 from parse import parse
+
+from GameAPI.user_extension import add_to_stats, add_xp, deposit_money
 
 channel_prefix = "💬onewordchallange-"
 
@@ -76,7 +77,7 @@ class Game(commands.Cog):
         embed.set_footer(text="Viel Spas!")
         await self.joinchannel.send(embed=embed, delete_after=10)
 
-        embed = discord.Embed(title="Also, " + self.players[self.nextplayer].display_name + ", bitte beginne und schreibe den Satzanfang",description="",color=0x58ff46)
+        embed = discord.Embed(title="Also, " + self.players[self.nextplayer].name + ", bitte beginne und schreibe den Satzanfang",description="",color=0x58ff46)
         embed.set_author(name="OneWordChallange",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         await self.gamechannel.send(embed=embed, delete_after=60)
@@ -94,12 +95,12 @@ class Game(commands.Cog):
                 break;
 
         for player in self.players:
-            Utils.add_to_stats(player, "OneWordChallange", 1, 1)
-            await Utils.add_xp(player, 15)
-            Utils.deposit_money(player, 5)
+            add_to_stats(player, "OneWordChallange", 1, 1)
+            await add_xp(player, 15)
+            deposit_money(player, 5)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)
-        await asyncio.sleep(10)
+        await asyncio.sleep(25)
         await self.gamechannel.delete()
 
     @commands.Cog.listener()
@@ -140,7 +141,7 @@ class Game(commands.Cog):
                     await self.send_gamefield()
                 else:
                     if message.content.upper() == ".":
-                        embed = discord.Embed(title=":tada: " + message.author.display_name + " Hat den Punkt gesetzt! :tada:",description="("+ self.sentence +" )", color=0x58ff46)
+                        embed = discord.Embed(title=":tada: " + message.author.name + " Hat den Punkt gesetzt! :tada:",description="("+ self.sentence +" )", color=0x58ff46)
                         embed.set_author(name="OneWordChallange",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await self.gamechannel.send(embed=embed)
@@ -152,7 +153,7 @@ class Game(commands.Cog):
                             self.nextplayer = 0
                         await self.send_gamefield()
                     else:
-                        embed = discord.Embed(title=message.author.display_name + ": Falsche Eingabe",description="Bitte benutze nur Buchstaben, einen Punkt oder !undo bzw. !komma !", color=0x58ff46)
+                        embed = discord.Embed(title=message.author.name + ": Falsche Eingabe",description="Bitte benutze nur Buchstaben, einen Punkt oder !undo bzw. !komma !", color=0x58ff46)
                         embed.set_author(name="OneWordChallange",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await self.gamechannel.send(embed=embed, delete_after=6)
@@ -163,8 +164,15 @@ class Game(commands.Cog):
     async def send_gamefield(self):
         # ggf. altes Spielfeld löschen:
         if self.message:
-            await self.message.delete()
-        embed = discord.Embed(title="Euer Satz:", description=self.sentence, color=0x58ff46)
+            embed = discord.Embed(title="Euer Satz:", description=self.sentence + ".", color=0x58ff46)
+            embed.set_author(name="OneWordChallange",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            embed.add_field(name="Nächster Spieler:",
+                        value=self.players[self.nextplayer].name,
+                        inline=True)
+            await self.message.edit(embed=embed)
+            return
+        embed = discord.Embed(title="Euer Satz:", description=self.sentence + ".", color=0x58ff46)
         embed.set_author(name="OneWordChallange",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.add_field(name="Nächster Spieler:",

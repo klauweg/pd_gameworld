@@ -12,6 +12,8 @@ from GameAPI.PlayerDataApi import Utils
 from discord.ext import commands
 import discord
 
+from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
+
 channel_prefix = "🔴🔵viergewinnt-"
 
 
@@ -97,17 +99,21 @@ class Game(commands.Cog):
         # Wir warten auf Spielzüge:
         while self.running:
             try:
-                await asyncio.wait_for( self.turnevent.wait(), timeout=60 )
+                await asyncio.wait_for( self.turnevent.wait(), timeout=300 )
             except asyncio.TimeoutError:
                 logging.info( "Timeout: Keine Spielzüge mehr, Spiel wird beendet" )
+                embed = discord.Embed(title="Game gestoppt:", description="(Timeout)", color=0x58ff46)
+                embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await self.gamechannel.send(embed=embed)
                 break;
 
         # Spiel beenden:
         await asyncio.sleep(5)
         await self.gamechannel.delete()
         for player in self.players:
-            Utils.add_to_stats(player, "ConnectFour", 0, 1)
-            await Utils.add_xp(player, 5)
+            add_to_stats(player, "ConnectFour", 0, 1)
+            await add_xp(player, 5)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)
 
@@ -148,9 +154,9 @@ class Game(commands.Cog):
                             colour=discord.Colour.green())
                         await self.gamechannel.send(embed=embed, delete_after=10)
                         # Statistik#
-                        await Utils.add_xp(self.players[self.nextplayer], 25)
-                        Utils.add_to_stats(self.players[self.nextplayer], "VierGewinnt", 1, 0)
-                        Utils.deposit_money(self.players[self.nextplayer], 20)
+                        await add_xp(self.players[self.nextplayer], 25)
+                        add_to_stats(self.players[self.nextplayer], "VierGewinnt", 1, 0)
+                        deposit_money(self.players[self.nextplayer], 20)
                         # Selbstzerstörung:
                         self.running = False
                     elif not 0 in chain(*self.gamefield):
