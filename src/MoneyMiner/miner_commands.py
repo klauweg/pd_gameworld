@@ -28,10 +28,13 @@ class MineCommands(commands.Cog):
         max_backpack_fill = get_max_backpack(ctx.author)
         backpack_level = get_backpack_level(ctx.author)
 
+        next_level_cost = 5 * (backpack_level+1) ** 2 + 15 * (backpack_level+1)
+
         embed = discord.Embed(title="Rucksack ( " + ctx.author.name +" )",description="[ " + str(backpack_fill) + " / " + str(max_backpack_fill) + " ] ",color=0x00FF00)
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_author(name="MoneyMiner",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.add_field(name="RuckSack Level:", value=str(backpack_level), inline=False)
+        embed.add_field(name="Upgrade kostet:", value=str(next_level_cost), inline=False)
         if ctx.author in self.gamemessages:
             try:
                 await self.gamemessages[ctx.author].delete()
@@ -52,11 +55,14 @@ class MineCommands(commands.Cog):
             return
         pickaxe_level = get_pickaxe_level(ctx.author)
 
+        next_level_cost = 5 * (pickaxe_level+1) ** 2 + 15 * (pickaxe_level+1)
+
         embed = discord.Embed(title="Spitzhacke ( " + ctx.author.name +" )",description="Spitzhackeninformationen",color=0x00FF00)
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_author(name="MoneyMiner",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.add_field(name="Spitzhacken Level:", value=str(pickaxe_level), inline=False)
-        embed.add_field(name="Money pro Minute:", value=str(1 * (pickaxe_level/2)), inline=False)
+        embed.add_field(name="Money pro Minute:", value=str(1 * (pickaxe_level/4)), inline=False)
+        embed.add_field(name="Upgrade kostet:", value=str(next_level_cost), inline=False)
         if ctx.author in self.gamemessages:
             try:
                 await self.gamemessages[ctx.author].delete()
@@ -146,14 +152,15 @@ class MineCommands(commands.Cog):
         while True:
             members = self.client.guilds[0].members
             for member in members:
-                pickaxe_level = get_pickaxe_level(member)
-                money_to_earn = 1 * (pickaxe_level/4)
-                backpack_fill = get_backpack_money(member)
-                max_backpack_fill = get_max_backpack(member)
-                if (backpack_fill + money_to_earn) > max_backpack_fill:
-                    backpack_set_money(member, max_backpack_fill)
-                else:
-                    backpack_set_money(member, backpack_fill + money_to_earn)
+                if member.status == discord.Status.online:
+                    pickaxe_level = get_pickaxe_level(member)
+                    money_to_earn = 1 * (pickaxe_level/4)
+                    backpack_fill = get_backpack_money(member)
+                    max_backpack_fill = get_max_backpack(member)
+                    if (backpack_fill + money_to_earn) > max_backpack_fill:
+                        backpack_set_money(member, max_backpack_fill)
+                    else:
+                        backpack_set_money(member, backpack_fill + money_to_earn)
             await asyncio.sleep(60)
 
 

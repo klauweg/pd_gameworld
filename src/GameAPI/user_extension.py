@@ -49,9 +49,8 @@ def get_pets( member ):
 def get_stats( member ):
     account = get_account( member )
     if "stats" not in account:
+        print("Default! Stats Acc")
         account["stats"] = {}
-    print(data[str(member.id)])
-    print(account["stats"])
     return account["stats"]
 
 ################################
@@ -68,6 +67,15 @@ def add_xp(member, xp):
 
 def get_level(member):
     return int(round(math.sqrt(get_xp(member)/5 + 2.25) - 1,5))
+
+def get_player_role(member):
+    rank = "Neuling"
+    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ältester"}
+    member_level = get_level(member)
+    for key in roles:
+        if member_level >= key:
+            rank = roles[key]
+    return rank
 
 async def update_player_role(member: discord.Member):
     roles = {0: 772413848598085662, 10: 772413846987603988, 20: 772414007691837440, 50: 772414093067419648}
@@ -87,11 +95,16 @@ async def update_player_nick(member: discord.Member):
 
 def add_to_stats(member, game_name, wins=0, played=0):
     stats = get_stats( member )
+    print(data[str(member.id)])
+    print(stats)
     if not game_name in stats:
+        print("Default!")
         stats[ game_name ] = [0,0]
     stats[ game_name ][0] += wins
     stats[ game_name ][1] += played
     update_data()
+    print(data[str(member.id)])
+
 
 def clear_stats():
     for memberid in data:
@@ -132,6 +145,18 @@ def has_money(member, amount):
         return True
     else:
         return False
+
+def get_cost(member, cost):
+    extra_money = 0
+    #Haustier multiplikator einberechnen
+    for pet in get_pets(member):
+        extra_money += cost * pet.money_multiply - cost
+    #Spitzhackenlevel von MoneyMiner einberechnen
+    extra_money += get_pickaxe_level(member) * 10
+    #4/5 dazuberechnen damit man durch haustiere trotzdem noch vorteile hat
+    cost += extra_money * (4/5)
+    #Runden
+    return int(round(cost))
 
 ############################ PETS
 

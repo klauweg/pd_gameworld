@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from src.GameAPI.user_extension import get_pets, add_pet, update_player_nick, has_money, deposit_money, withdraw_money, \
-    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet, clear_stats
+    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet, clear_stats, get_cost
 
 
 class Commands(commands.Cog):
@@ -32,13 +32,20 @@ class Commands(commands.Cog):
 
                 if (len(pets) == 0):
                     embed = discord.Embed(title="Hinweis!",
-                                          description="Du hast noch keine Pets",
+                                          description="Der Spieler " + member.name +"  hat noch keine Pets",
                                           color=0x999999)
                     embed.set_author(name="Haustiere",
                                      icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                    await member.send(embed=embed, delete_after=60)
+                    await ctx.author.send(embed=embed, delete_after=60)
 
                     return
+
+                embed = discord.Embed(title=member.name + "'s Haustiere",
+                                      description="Hier sind alle Haustiere von " + member.name,
+                                      color=0x999999)
+                embed.set_author(name="Haustiere",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await ctx.author.send(embed=embed, delete_after=60)
 
                 rarity_color = {"Gewöhnlich": 0x999999, "Selten": 0x00FF00, "Episch": 0x8800FF, "Legendär": 0xE2B007}
 
@@ -62,7 +69,7 @@ class Commands(commands.Cog):
                                     value=isequipped,
                                     inline=False)
 
-                    await member.send(embed=embed, delete_after=60)
+                    await ctx.author.send(embed=embed, delete_after=60)
 
 
     # Der Chef darf Channels purgen:
@@ -120,11 +127,7 @@ class Commands(commands.Cog):
 
         if ctx.channel.id == 772214299997110292:
 
-            cost = 300
-            extra_money = 0
-            for pet in get_pets(ctx.author):
-                extra_money += cost * pet.money_multiply - cost
-            cost += extra_money
+            cost = get_cost(ctx.author, 300)
 
             if not has_money(ctx.author, cost):
                 embed = discord.Embed(title="Du hast nicht genug Money!",
