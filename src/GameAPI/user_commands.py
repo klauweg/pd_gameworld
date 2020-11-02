@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from src.GameAPI.user_extension import get_pets, add_pet, update_player_nick, has_money, deposit_money, withdraw_money, \
-    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet
+    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet, clear_stats
 
 
 class Commands(commands.Cog):
@@ -247,6 +247,17 @@ class Commands(commands.Cog):
         role = discord.utils.get(ctx.guild.roles, id=744630374855868456)
         if role in ctx.author.roles:
             clear_all_pets()
+
+    # Der Chef darf Channels purgen:
+    @commands.command()
+    async def clear_stats(self, ctx: commands.Context, *, member: discord.Member = None):
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+        role = discord.utils.get(ctx.guild.roles, id=744630374855868456)
+        if role in ctx.author.roles:
+            clear_stats()
 
     @commands.command()
     async def money(self, ctx: commands.Context, *args):

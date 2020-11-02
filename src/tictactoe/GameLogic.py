@@ -9,7 +9,7 @@ import io
 
 from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
 
-channel_prefix = "🔴🔵tictactoe-"
+channel_prefix = "📫tictactoe-"
 
 class GameControl():
     def __init__(self, queue):

@@ -112,7 +112,7 @@ class Game(commands.Cog):
         await asyncio.sleep(5)
         await self.gamechannel.delete()
         for player in self.players:
-            add_to_stats(player, "ConnectFour", 0, 1)
+            add_to_stats(player, "VierGewinnt", 0, 1)
             add_xp(player, 5)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)

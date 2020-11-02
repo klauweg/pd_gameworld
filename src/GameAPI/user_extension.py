@@ -50,6 +50,8 @@ def get_stats( member ):
     account = get_account( member )
     if "stats" not in account:
         account["stats"] = {}
+    print(data[str(member.id)])
+    print(account["stats"])
     return account["stats"]
 
 ################################
@@ -89,6 +91,11 @@ def add_to_stats(member, game_name, wins=0, played=0):
         stats[ game_name ] = [0,0]
     stats[ game_name ][0] += wins
     stats[ game_name ][1] += played
+    update_data()
+
+def clear_stats():
+    for memberid in data:
+        data[memberid]["stats"] = {}
     update_data()
 
 ############################### Economy
