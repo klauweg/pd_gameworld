@@ -6,6 +6,7 @@ import asyncio
 import discord
 
 import pickle
+from collections import defaultdict
 
 #########################
 from GameAPI.Pet import Pet
@@ -16,33 +17,28 @@ try:
     with open(file_path,"rb") as fp:
         data = pickle.load(fp)
 except FileNotFoundError:
-    data = {}
-
+    data = defaultdict( dict )
 
 def update_data():
     with open(file_path, "wb") as fp:
         pickle.dump(data, fp)
 
-def get_topic( member, topic ):
-    id = str( member.id )
-    if id not in data: # ggf. Benutzer anlegen
-        data[id]={}
-    if topic not in account: # ggf. Topic anlegen
-        data[id][topic] = {}
-    return data[id][topic]
+################################ XP
 
-################################
+def get_xp(member):
+    return data[ str(member.id) ].setdefault("xp", 0)
 
+def set_xp(member, xp):
+    data[ str(member.id) ]["xp"] = xp
+    update_data()
+    
 def add_xp(member, xp):
     multiplyxp = 0
     for pet in get_pets( member ):
         if pet.equipped == True:
             multiplyxp += xp*pet.xp_multiply - xp
-    get_topic( member, "xp" )["value"]
-    set_xp( member, get_xp( member ) + (xp + multiplyxp) )
+    set_xp(member, get_xp(member) + (xp + multiplyxp) )
     asyncio.create_task( update_player_nick(member) )
-    update_data()
-
 
 def get_level(member):
     return int(round(math.sqrt(get_xp(member)/5 + 2.25) - 1,5))
@@ -60,15 +56,16 @@ async def update_player_nick(member: discord.Member):
     except discord.Forbidden:
         pass
 
-
 ################# STATS
 
-def add_to_stats(member, game_name, wins=0, played=0):
-    stats = get_stats( member )
-    if not game_name in stats:
-        stats[ game_name ] = [0,0]
-    stats[ game_name ][0] += wins
-    stats[ game_name ][1] += played
+def get_stats(member):
+    return data[ str(member.id) ].setdefault("stats", {})
+    
+def add_to_stats(member, game_name, wins=0, played=0, even=0):
+    stats = get_stats(member).setdefault(game_name, [0,0,0])
+    stats[0] += wins
+    stats[1] += played
+    stats[2] += even
     update_data()
 
 def clear_stats():
@@ -79,11 +76,12 @@ def clear_stats():
 ############################### Economy
 
 def get_money(member):
-    account = get_account( member )
-    if "money" not in account:
-        account["money"] = 0
-    return account["money"]
+    return data[ str(member.id) ].setdefault("money", 0)
 
+def set_money(member, amount):
+    data[ str(member.id) ]["money"] = amount
+    update_data()
+    
 def deposit_money(member, amount):
     multiplymoney = 0
     for pet in get_pets( member ):
@@ -91,8 +89,6 @@ def deposit_money(member, amount):
             multiplymoney += amount*pet.xp_multiply - amount
     set_money( member, get_money( member ) + (amount + multiplymoney) )
     asyncio.create_task( update_player_nick(member) )
-    update_data()
-
 
 def withdraw_money(member, amount):
     if get_money(member) >= amount:
@@ -101,53 +97,35 @@ def withdraw_money(member, amount):
     else:
         return False
 
-
-def set_money(member, amount):
-    get_account( member )["money"] = amount
-
 def has_money(member, amount):
-    if get_money(member) >= amount:
-        return True
-    else:
-        return False
+    return get_money(member) >= amount
 
 ############################ PETS
 
-def add_pet(member, name, xp_m, money_m, rarity):
-    get_pets(member).append(Pet(name.upper(), xp_m, money_m, rarity))
-    update_data()
-
 def get_pets(member):
-    account = get_account( member )
-    if "pets" not in account:
-        account["pets"] = []
-    return account["pets"]
+    return data[ str(member.id) ].setdefault("pets", [])    
+
+def add_pet(member, name, xp_m, money_m, rarity):
+    get_pets(member).append( Pet(name, xp_m, money_m, rarity) )
+    update_data()
 
 def clear_all_pets():
     for memberid in data:
         data[memberid]["pets"] = []
     update_data()
 
-def remove_pet(member, name):
-    prepare_account(member)
-    if has_pet(member, name):
-        for pet in get_pets(member):
-            if pet.name == name:
-                get_pets.remove(pet)
-                update_data()
-                return True
-        return False
-    else:
-        return False
-
-def has_pet(member, name):
+def search_pet( member, name ):
     for pet in get_pets(member):
-        if pet.name == name.upper():
-            return True
-    return False
-
+        if pet.name.upper() == name.upper():
+            return pet
+    
+def remove_pet(member, name):
+    pet = search_pet( member, name )
+    if pet:
+        get_pets(member).remove( pet )
+    
 def equip_pet(member, name):
-    if not has_pet(member, name):
+    if not search_pet(member, name):
         return "Du hast dieses Pet nicht!"
 
     equipped_pets_amount = 0
@@ -163,7 +141,7 @@ def equip_pet(member, name):
             return "Du hast " + name + " Equipped"
 
 def unequip_pet(member, name):
-    if not has_pet(member, name):
+    if not search_pet(member, name):
         return "Du hast dieses Pet nicht!"
     if is_pet_equipped(member, name.upper()):
         for pet in get_pets(member):
