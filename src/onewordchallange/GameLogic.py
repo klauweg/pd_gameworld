@@ -96,7 +96,7 @@ class Game(commands.Cog):
 
         for player in self.players:
             add_to_stats(player, "OneWordChallange", 1, 1)
-            await add_xp(player, 15)
+            add_xp(player, 15)
             deposit_money(player, 5)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)

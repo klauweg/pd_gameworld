@@ -17,7 +17,7 @@ class BugReport(commands.Cog):
         if not message.channel.id == self.bugreportschannelid:
             return
         embed = discord.Embed(title="You reported a Bug", description=arg, color=0x49ff35)
-        embed.set_author(name="BugReport",
+        embed.set_author(name="Bug:" + arg,
                          icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
