@@ -113,7 +113,7 @@ class Game(commands.Cog):
         await self.gamechannel.delete()
         for player in self.players:
             add_to_stats(player, "ConnectFour", 0, 1)
-            await add_xp(player, 5)
+            add_xp(player, 5)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)
 
@@ -154,7 +154,7 @@ class Game(commands.Cog):
                             colour=discord.Colour.green())
                         await self.gamechannel.send(embed=embed, delete_after=10)
                         # Statistik#
-                        await add_xp(self.players[self.nextplayer], 25)
+                        add_xp(self.players[self.nextplayer], 25)
                         add_to_stats(self.players[self.nextplayer], "VierGewinnt", 1, 0)
                         deposit_money(self.players[self.nextplayer], 20)
                         # Selbstzerstörung:

@@ -99,7 +99,7 @@ class Game(commands.Cog):
         # Spiel beenden:
         for player in self.players:
             add_to_stats(player, "TicTacToe", 0, 1)
-            await add_xp(player, 5)
+            add_xp(player, 5)
             self.queue.release_player(player.id)
         await asyncio.sleep(5)
         await self.gamechannel.delete()
@@ -123,7 +123,7 @@ class Game(commands.Cog):
                             if self.compute_winner(self.playerindex[self.currentPlayer]):
                                 embed = discord.Embed(title=":tada: Player " + self.players[self.currentPlayer].name +" hat gewonnen :tada:",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
-                                await add_xp(self.players[self.currentPlayer], 20)
+                                add_xp(self.players[self.currentPlayer], 20)
                                 add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0)
                                 deposit_money(self.players[self.currentPlayer], 10)
                                 self.running = False

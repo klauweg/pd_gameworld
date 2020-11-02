@@ -100,7 +100,7 @@ class Game(commands.Cog):
 
         for player in self.players:
             add_to_stats(player, "HangMan", 0, 1)
-            await add_xp(player, 5)
+            add_xp(player, 5)
             self.queue.release_player(player.id)
         add_xp(self.not_guessing_player, 5)
         add_to_stats(self.not_guessing_player,"HangMan", 0,1)
@@ -158,7 +158,7 @@ class Game(commands.Cog):
                         embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         await self.gamechannel.send(embed=embed)
-                        await add_xp(self.not_guessing_player, 30)
+                        add_xp(self.not_guessing_player, 30)
                         add_to_stats(self.not_guessing_player, "HangMan", 1, 0)
                         deposit_money(self.not_guessing_player, 20)
                         self.running = False
