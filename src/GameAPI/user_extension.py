@@ -6,6 +6,7 @@ import asyncio
 import discord
 
 import pickle
+from collections import defaultdict
 
 #########################
 from GameAPI.Pet import Pet
@@ -16,54 +17,28 @@ try:
     with open(file_path,"rb") as fp:
         data = pickle.load(fp)
 except FileNotFoundError:
-    data = {}
-
+    data = defaultdict( dict )
 
 def update_data():
     with open(file_path, "wb") as fp:
         pickle.dump(data, fp)
 
+################################ XP
 
-def get_account( member ):
-    id = str( member.id )
-    if id not in data:
-        data[id]={}
-    return data[id]
+def get_xp(member):
+    return data[ str(member.id) ].setdefault("xp", 0)
 
-def get_xp( member ):
-    account = get_account( member )
-    if "xp" not in account:
-        account["xp"] = 0
-    return account["xp"]
-
-def set_xp( member, xp ):
-    get_account( member )["xp"] = xp
-    asyncio.create_task( update_player_nick( member ))
-
-def get_pets( member ):
-    account = get_account( member )
-    if "pets" not in account:
-        account["pets"] = []
-    return account["pets"]
-
-def get_stats( member ):
-    account = get_account( member )
-    if "stats" not in account:
-        print("Default! Stats Acc")
-        account["stats"] = {}
-    return account["stats"]
-
-################################
-
+def set_xp(member, xp):
+    data[ str(member.id) ]["xp"] = xp
+    update_data()
+    
 def add_xp(member, xp):
     multiplyxp = 0
     for pet in get_pets( member ):
         if pet.equipped == True:
             multiplyxp += xp*pet.xp_multiply - xp
-    set_xp( member, get_xp( member ) + (xp + multiplyxp) )
+    set_xp(member, get_xp(member) + (xp + multiplyxp) )
     asyncio.create_task( update_player_nick(member) )
-    update_data()
-
 def remove_xp(member, xp):
     set_xp( member, get_xp(member) - xp)
     asyncio.create_task( update_player_nick(member) )
@@ -75,7 +50,7 @@ def get_level(member):
 
 def get_player_role(member):
     rank = "Neuling"
-    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ã„ltester"}
+    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ältester"}
     member_level = get_level(member)
     for key in roles:
         if member_level >= key:
@@ -95,21 +70,17 @@ async def update_player_nick(member: discord.Member):
     except discord.Forbidden:
         pass
 
-
 ################# STATS
 
-def add_to_stats(member, game_name, wins=0, played=0):
-    stats = get_stats( member )
-    print(data[str(member.id)])
-    print(stats)
-    if not game_name in stats:
-        print("Default!")
-        stats[ game_name ] = [0,0]
-    stats[ game_name ][0] += wins
-    stats[ game_name ][1] += played
+def get_stats(member):
+    return data[ str(member.id) ].setdefault("stats", {})
+    
+def add_to_stats(member, game_name, wins=0, played=0, even=0):
+    stats = get_stats(member).setdefault(game_name, [0,0,0])
+    stats[0] += wins
+    stats[1] += played
+    stats[2] += even
     update_data()
-    print(data[str(member.id)])
-
 
 def clear_stats():
     for memberid in data:
@@ -119,11 +90,12 @@ def clear_stats():
 ############################### Economy
 
 def get_money(member):
-    account = get_account( member )
-    if "money" not in account:
-        account["money"] = 0
-    return account["money"]
+    return data[ str(member.id) ].setdefault("money", 0)
 
+def set_money(member, amount):
+    data[ str(member.id) ]["money"] = amount
+    update_data()
+    
 def deposit_money(member, amount):
     multiplymoney = 0
     for pet in get_pets( member ):
@@ -131,8 +103,6 @@ def deposit_money(member, amount):
             multiplymoney += amount*pet.xp_multiply - amount
     set_money( member, get_money( member ) + (amount + multiplymoney) )
     asyncio.create_task( update_player_nick(member) )
-    update_data()
-
 
 def withdraw_money(member, amount):
     if get_money(member) >= amount:
@@ -141,15 +111,13 @@ def withdraw_money(member, amount):
     else:
         return False
 
-
-def set_money(member, amount):
-    get_account( member )["money"] = amount
-
 def has_money(member, amount):
-    if get_money(member) >= amount:
-        return True
-    else:
-        return False
+    return get_money(member) >= amount
+
+############################ PETS
+
+def get_pets(member):
+    return data[ str(member.id) ].setdefault("pets", [])    
 
 def get_cost(member, cost):
     extra_money = 0
@@ -163,43 +131,27 @@ def get_cost(member, cost):
     #Runden
     return int(round(cost))
 
-############################ PETS
-
 def add_pet(member, name, xp_m, money_m, rarity):
-    get_pets(member).append(Pet(name.upper(), xp_m, money_m, rarity))
+    get_pets(member).append( Pet(name, xp_m, money_m, rarity) )
     update_data()
-
-def get_pets(member):
-    account = get_account( member )
-    if "pets" not in account:
-        account["pets"] = []
-    return account["pets"]
 
 def clear_all_pets():
     for memberid in data:
         data[memberid]["pets"] = []
     update_data()
 
-def remove_pet(member, name):
-    prepare_account(member)
-    if has_pet(member, name):
-        for pet in get_pets(member):
-            if pet.name == name:
-                get_pets.remove(pet)
-                update_data()
-                return True
-        return False
-    else:
-        return False
-
-def has_pet(member, name):
+def search_pet( member, name ):
     for pet in get_pets(member):
-        if pet.name == name.upper():
-            return True
-    return False
-
+        if pet.name.upper() == name.upper():
+            return pet
+    
+def remove_pet(member, name):
+    pet = search_pet( member, name )
+    if pet:
+        get_pets(member).remove( pet )
+    
 def equip_pet(member, name):
-    if not has_pet(member, name):
+    if not search_pet(member, name):
         return "Du hast dieses Pet nicht!"
 
     equipped_pets_amount = 0
@@ -215,7 +167,7 @@ def equip_pet(member, name):
             return "Du hast " + name + " Equipped"
 
 def unequip_pet(member, name):
-    if not has_pet(member, name):
+    if not search_pet(member, name):
         return "Du hast dieses Pet nicht!"
     if is_pet_equipped(member, name.upper()):
         for pet in get_pets(member):
