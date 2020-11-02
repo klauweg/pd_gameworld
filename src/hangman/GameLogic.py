@@ -145,8 +145,9 @@ class Game(commands.Cog):
                     embed = discord.Embed(title=":tada: " + message.author.display_name + " hat das Wort erraten! :tada:",description="Danke fürs Spielen!", color=0x58ff46)
                     embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed.add_field(name="Das Wort war:", value=self.correct_word, inline=False)
                     await self.gamechannel.send(embed=embed)
-                    await add_xp(message.author, 30)
+                    add_xp(message.author, 30)
                     add_to_stats(message.author, "HangMan", 1, 0)
                     deposit_money(message.author, 20)
                     self.running = False
@@ -157,6 +158,7 @@ class Game(commands.Cog):
                         embed = discord.Embed(title="Du hast verloren:", description="Hangman wurde erhängt!", color=0x58ff46)
                         embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed.add_field(name="Das Wort war:", value=self.correct_word, inline=False)
                         await self.gamechannel.send(embed=embed)
                         add_xp(self.not_guessing_player, 30)
                         add_to_stats(self.not_guessing_player, "HangMan", 1, 0)

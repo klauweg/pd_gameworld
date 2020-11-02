@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from src.GameAPI.user_extension import get_pets, add_pet, update_player_nick, has_money, deposit_money, withdraw_money, \
-    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet, clear_stats
+    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet, clear_stats, get_cost, get_xp, remove_xp, get_money
 
 
 class Commands(commands.Cog):
@@ -32,13 +32,20 @@ class Commands(commands.Cog):
 
                 if (len(pets) == 0):
                     embed = discord.Embed(title="Hinweis!",
-                                          description="Du hast noch keine Pets",
+                                          description="Der Spieler " + member.name +"  hat noch keine Pets",
                                           color=0x999999)
                     embed.set_author(name="Haustiere",
                                      icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                    await member.send(embed=embed, delete_after=60)
+                    await ctx.author.send(embed=embed, delete_after=60)
 
                     return
+
+                embed = discord.Embed(title=member.name + "'s Haustiere",
+                                      description="Hier sind alle Haustiere von " + member.name,
+                                      color=0x999999)
+                embed.set_author(name="Haustiere",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await ctx.author.send(embed=embed, delete_after=60)
 
                 rarity_color = {"Gewöhnlich": 0x999999, "Selten": 0x00FF00, "Episch": 0x8800FF, "Legendär": 0xE2B007}
 
@@ -62,7 +69,7 @@ class Commands(commands.Cog):
                                     value=isequipped,
                                     inline=False)
 
-                    await member.send(embed=embed, delete_after=60)
+                    await ctx.author.send(embed=embed, delete_after=60)
 
 
     # Der Chef darf Channels purgen:
@@ -120,15 +127,12 @@ class Commands(commands.Cog):
 
         if ctx.channel.id == 772214299997110292:
 
-            cost = 300
-            extra_money = 0
-            for pet in get_pets(ctx.author):
-                extra_money += cost * pet.money_multiply - cost
-            cost += extra_money
+            cost = get_cost(ctx.author, 300)
+            account_balance = get_money(ctx.author)
 
             if not has_money(ctx.author, cost):
                 embed = discord.Embed(title="Du hast nicht genug Money!",
-                                      description="Du brauchst mindestens "+ str(cost) +" !",
+                                      description="Du brauchst mindestens "+ str(cost) +", aber du hast leider nur "+ str(round(account_balance,2))+" !",
                                       color=0xFF0000)
                 embed.set_author(name="Haustier",
                                  icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -326,10 +330,10 @@ class Commands(commands.Cog):
                 if not member == None:
                     if(args[0] == "add"):
                         try:
-                            await add_xp(member, int(args[2]))
+                            add_xp(member, int(args[2]))
                         except ValueError:
                             embed = discord.Embed(title="Du musst eine Zahl angeben!",
-                                                  description="!xp deposit [name] [zahl]",
+                                                  description="!xp add [name] [zahl]",
                                                   color=0xFF0000)
                             embed.set_author(name="Xp",
                                              icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -337,10 +341,29 @@ class Commands(commands.Cog):
                             return
                     if(args[0] == "set"):
                         try:
-                            await set_xp(member, int(args[2]))
+                            add_xp(member, int(args[2]))
                         except ValueError:
                             embed = discord.Embed(title="Du musst eine Zahl angeben!",
                                                   description="!xp set [name] [zahl]",
+                                                  color=0xFF0000)
+                            embed.set_author(name="Xp",
+                                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            await ctx.channel.send(embed=embed, delete_after=7)
+                            return
+                    if(args[0] == "remove"):
+                        if not get_xp(ctx.author) >= float(args[2]):
+                            embed = discord.Embed(title="Das ergebnis würde ins Minus gehen!",
+                                                  description="Bitte wähle eine kleinere Zahl",
+                                                  color=0xFF0000)
+                            embed.set_author(name="Xp",
+                                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            await ctx.channel.send(embed=embed, delete_after=7)
+                            return
+                        try:
+                            remove_xp(member, float(args[2]))
+                        except ValueError:
+                            embed = discord.Embed(title="Du musst eine Zahl angeben!",
+                                                  description="!xp remove [name] [zahl]",
                                                   color=0xFF0000)
                             embed.set_author(name="Xp",
                                              icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")

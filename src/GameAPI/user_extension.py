@@ -39,9 +39,23 @@ def add_xp(member, xp):
             multiplyxp += xp*pet.xp_multiply - xp
     set_xp(member, get_xp(member) + (xp + multiplyxp) )
     asyncio.create_task( update_player_nick(member) )
+def remove_xp(member, xp):
+    set_xp( member, get_xp(member) - xp)
+    asyncio.create_task( update_player_nick(member) )
+    update_data()
+
 
 def get_level(member):
     return int(round(math.sqrt(get_xp(member)/5 + 2.25) - 1,5))
+
+def get_player_role(member):
+    rank = "Neuling"
+    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ältester"}
+    member_level = get_level(member)
+    for key in roles:
+        if member_level >= key:
+            rank = roles[key]
+    return rank
 
 async def update_player_role(member: discord.Member):
     roles = {0: 772413848598085662, 10: 772413846987603988, 20: 772414007691837440, 50: 772414093067419648}
@@ -100,10 +114,28 @@ def withdraw_money(member, amount):
 def has_money(member, amount):
     return get_money(member) >= amount
 
+<<<<<<< ./src/GameAPI/user_extension_LOCAL_18624.py
 ############################ PETS
 
 def get_pets(member):
     return data[ str(member.id) ].setdefault("pets", [])    
+||||||| ./src/GameAPI/user_extension_BASE_18624.py
+############################ PETS
+=======
+def get_cost(member, cost):
+    extra_money = 0
+    #Haustier multiplikator einberechnen
+    for pet in get_pets(member):
+        extra_money += cost * pet.money_multiply - cost
+    #Spitzhackenlevel von MoneyMiner einberechnen
+    extra_money += get_pickaxe_level(member) * 10
+    #4/5 dazuberechnen damit man durch haustiere trotzdem noch vorteile hat
+    cost += extra_money * (4/5)
+    #Runden
+    return int(round(cost))
+
+############################ PETS
+>>>>>>> ./src/GameAPI/user_extension_REMOTE_18624.py
 
 def add_pet(member, name, xp_m, money_m, rarity):
     get_pets(member).append( Pet(name, xp_m, money_m, rarity) )
