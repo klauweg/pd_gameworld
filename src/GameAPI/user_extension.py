@@ -23,36 +23,13 @@ def update_data():
     with open(file_path, "wb") as fp:
         pickle.dump(data, fp)
 
-
-def get_account( member ):
+def get_topic( member, topic ):
     id = str( member.id )
-    if id not in data:
+    if id not in data: # ggf. Benutzer anlegen
         data[id]={}
-    return data[id]
-
-def get_xp( member ):
-    account = get_account( member )
-    if "xp" not in account:
-        account["xp"] = 0
-    return account["xp"]
-
-def set_xp( member, xp ):
-    get_account( member )["xp"] = xp
-    asyncio.create_task( update_player_nick( member ))
-
-def get_pets( member ):
-    account = get_account( member )
-    if "pets" not in account:
-        account["pets"] = []
-    return account["pets"]
-
-def get_stats( member ):
-    account = get_account( member )
-    if "stats" not in account:
-        account["stats"] = {}
-    print(data[str(member.id)])
-    print(account["stats"])
-    return account["stats"]
+    if topic not in account: # ggf. Topic anlegen
+        data[id][topic] = {}
+    return data[id][topic]
 
 ################################
 
@@ -61,6 +38,7 @@ def add_xp(member, xp):
     for pet in get_pets( member ):
         if pet.equipped == True:
             multiplyxp += xp*pet.xp_multiply - xp
+    get_topic( member, "xp" )["value"]
     set_xp( member, get_xp( member ) + (xp + multiplyxp) )
     asyncio.create_task( update_player_nick(member) )
     update_data()
