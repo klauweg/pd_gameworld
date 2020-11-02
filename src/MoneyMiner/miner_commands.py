@@ -147,7 +147,7 @@ class MineCommands(commands.Cog):
             members = self.client.guilds[0].members
             for member in members:
                 pickaxe_level = get_pickaxe_level(member)
-                money_to_earn = 1 * (pickaxe_level/2)
+                money_to_earn = 1 * (pickaxe_level/4)
                 backpack_fill = get_backpack_money(member)
                 max_backpack_fill = get_max_backpack(member)
                 if (backpack_fill + money_to_earn) > max_backpack_fill:
