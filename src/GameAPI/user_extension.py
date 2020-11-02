@@ -114,14 +114,11 @@ def withdraw_money(member, amount):
 def has_money(member, amount):
     return get_money(member) >= amount
 
-<<<<<<< ./src/GameAPI/user_extension_LOCAL_18624.py
 ############################ PETS
 
 def get_pets(member):
     return data[ str(member.id) ].setdefault("pets", [])    
-||||||| ./src/GameAPI/user_extension_BASE_18624.py
-############################ PETS
-=======
+
 def get_cost(member, cost):
     extra_money = 0
     #Haustier multiplikator einberechnen
@@ -133,9 +130,6 @@ def get_cost(member, cost):
     cost += extra_money * (4/5)
     #Runden
     return int(round(cost))
-
-############################ PETS
->>>>>>> ./src/GameAPI/user_extension_REMOTE_18624.py
 
 def add_pet(member, name, xp_m, money_m, rarity):
     get_pets(member).append( Pet(name, xp_m, money_m, rarity) )
