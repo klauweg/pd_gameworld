@@ -64,6 +64,11 @@ def add_xp(member, xp):
     asyncio.create_task( update_player_nick(member) )
     update_data()
 
+def remove_xp(member, xp):
+    set_xp( member, get_xp(member) - xp)
+    asyncio.create_task( update_player_nick(member) )
+    update_data()
+
 
 def get_level(member):
     return int(round(math.sqrt(get_xp(member)/5 + 2.25) - 1,5))
