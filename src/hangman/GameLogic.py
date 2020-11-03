@@ -99,7 +99,7 @@ class Game(commands.Cog):
                 break;
 
         for player in self.players:
-            add_to_stats(player, "HangMan", 0, 1)
+            add_to_stats(player, "HangMan", 0, 1, 0)
             add_xp(player, 5)
             self.queue.release_player(player.id)
         add_xp(self.not_guessing_player, 5)
@@ -148,7 +148,7 @@ class Game(commands.Cog):
                     embed.add_field(name="Das Wort war:", value=self.correct_word, inline=False)
                     await self.gamechannel.send(embed=embed)
                     add_xp(message.author, 30)
-                    add_to_stats(message.author, "HangMan", 1, 0)
+                    add_to_stats(message.author, "HangMan", 1, 0, 0)
                     deposit_money(message.author, 20)
                     self.running = False
                 elif self.is_valid_guess(message.content.upper()):
@@ -161,7 +161,7 @@ class Game(commands.Cog):
                         embed.add_field(name="Das Wort war:", value=self.correct_word, inline=False)
                         await self.gamechannel.send(embed=embed)
                         add_xp(self.not_guessing_player, 30)
-                        add_to_stats(self.not_guessing_player, "HangMan", 1, 0)
+                        add_to_stats(self.not_guessing_player, "HangMan", 1, 0, 0)
                         deposit_money(self.not_guessing_player, 20)
                         self.running = False
                 self.turnevent.set()

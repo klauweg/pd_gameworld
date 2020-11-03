@@ -89,9 +89,10 @@ class MineCommands(commands.Cog):
         if args[0] in pickaxe_aliases:
             pickaxe_level = get_pickaxe_level(ctx.author)
             needed_money = 5*pickaxe_level**2 + 15*pickaxe_level
+            player_balance = get_money(ctx.author)
             if has_money(ctx.author, needed_money):
                 withdraw_money(ctx.author, needed_money)
-                newlevel = levelup_pickaxe(ctx.author)
+                newlevel = levelup_pickaxe(ctx.author, 1)
                 embed = discord.Embed(title="Upgegradet", description="Spitzhacke für "+ str(needed_money) +" auf Level " + str(newlevel) + " geupgradet!", color=0x00FF00)
                 embed.set_author(name="MoneyMiner",
                                  icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -99,7 +100,7 @@ class MineCommands(commands.Cog):
                     url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 await ctx.channel.send(embed=embed, delete_after=6)
             else:
-                embed = discord.Embed(title="Achtung", description="Du brauchst min. " + str(needed_money) + " zum Upgraden!", color=0xFF0000)
+                embed = discord.Embed(title="Achtung", description="Du brauchst min. " + str(needed_money) + " zum Upgraden, hast aber nur "+str(round(player_balance,2))+"!", color=0xFF0000)
                 embed.set_author(name="MoneyMiner",
                                  icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(
@@ -110,9 +111,10 @@ class MineCommands(commands.Cog):
         elif args[0] in backpack_aliases:
             backpack_level = get_backpack_level(ctx.author)
             needed_money = 5*backpack_level**2 + 15*backpack_level
+            player_balance = get_money(ctx.author)
             if has_money(ctx.author, needed_money):
                 withdraw_money(ctx.author, needed_money)
-                newlevel = levelup_backpack(ctx.author)
+                newlevel = levelup_backpack(ctx.author, 1)
                 embed = discord.Embed(title="Upgegradet", description="Rucksack für "+ str(needed_money) +" auf Level " + str(newlevel) + " geupgradet!", color=0x00FF00)
                 embed.set_author(name="MoneyMiner",
                                  icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -120,7 +122,7 @@ class MineCommands(commands.Cog):
                     url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 await ctx.channel.send(embed=embed, delete_after=6)
             else:
-                embed = discord.Embed(title="Achtung", description="Du brauchst min. " + str(needed_money) + " zum Upgraden!", color=0xFF0000)
+                embed = discord.Embed(title="Achtung", description="Du brauchst min. " + str(needed_money) + " zum Upgraden, hast aber nur "+str(round(player_balance,2))+"!", color=0xFF0000)
                 embed.set_author(name="MoneyMiner",
                                  icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                 embed.set_thumbnail(

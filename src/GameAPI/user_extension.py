@@ -8,6 +8,8 @@ import discord
 import pickle
 from collections import defaultdict
 
+import time
+
 #########################
 from GameAPI.Pet import Pet
 
@@ -25,6 +27,26 @@ def update_data():
     with open(file_path, "wb") as fp:
         pickle.dump(data, fp)
 
+
+############## BOOSTER
+def set_booster(booster, multiplikator, duration):
+    data.setdefault("booster", {})[booster.lower()] = {"multiply": multiplikator, "time": duration, "created": time.time()}
+    update_data()
+
+def get_booster_multiply(booster):
+    timestamp = data.get("booster", {}).get(booster.lower(), {"created": time.time()})["created"]
+    duration_min = data.get("booster", {}).get(booster.lower(), {"time": 0})["time"]
+    if (time.time() - timestamp) > (duration_min*60):
+        try:
+            data.setdefault("booster", {}).pop(booster.lower())
+        except KeyError:
+            pass
+    print(data.get("booster", {}))
+    return data.setdefault("booster", {}).setdefault(booster, {"multiply": 1})["multiply"]
+
+def remove_boosters():
+    data["booster"] = {}
+    update_data()
 ################################ XP
 
 def get_xp(member):
@@ -39,7 +61,7 @@ def add_xp(member, xp):
     for pet in get_pets( member ):
         if pet.equipped == True:
             multiplyxp += xp*pet.xp_multiply - xp
-    set_xp(member, get_xp(member) + (xp + multiplyxp) )
+    set_xp(member, get_xp(member) + ((xp + multiplyxp) * get_booster_multiply("xp")))
     asyncio.create_task( update_player_nick(member) )
 def remove_xp(member, xp):
     set_xp( member, get_xp(member) - xp)
@@ -103,7 +125,7 @@ def deposit_money(member, amount):
     for pet in get_pets( member ):
         if pet.equipped == True:
             multiplymoney += amount*pet.xp_multiply - amount
-    set_money( member, get_money( member ) + (amount + multiplymoney) )
+    set_money( member, get_money( member ) + ((amount + multiplymoney) * get_booster_multiply("money")) )
     asyncio.create_task( update_player_nick(member) )
 
 def withdraw_money(member, amount):
@@ -196,13 +218,13 @@ def get_pet_amount(member):
 def get_moneyminer(member):
     return data[str(member.id)].setdefault("moneyminer", {"pa_level": 0, "bp_level": 1, "bp_fill": 0})
 
-def levelup_backpack(member):
-    get_moneyminer(member)["bp_level"] += 1
+def levelup_backpack(member, level):
+    get_moneyminer(member)["bp_level"] += level
     update_data()
     return get_moneyminer(member)["bp_level"]
 
-def levelup_pickaxe(member):
-    get_moneyminer(member)["pa_level"] += 1
+def levelup_pickaxe(member, level):
+    get_moneyminer(member)["pa_level"] += level
     update_data()
     return get_moneyminer(member)["pa_level"]
 

@@ -71,7 +71,6 @@ class Commands(commands.Cog):
                     await ctx.author.send(embed=embed, delete_after=60)
 
 
-    # Der Chef darf Channels purgen:
     @commands.command()
     async def update_nick(self, ctx: commands.Context, *, member: discord.Member = None):
         try:
@@ -84,7 +83,6 @@ class Commands(commands.Cog):
             for member in members:
                 await update_player_nick(member)
 
-    # Der Chef darf Channels purgen:
     @commands.command()
     async def update_roles(self, ctx: commands.Context, *, member: discord.Member = None):
         try:
@@ -96,6 +94,59 @@ class Commands(commands.Cog):
             members = ctx.guild.members
             for member in members:
                 await update_player_role(member)
+
+    @commands.command()
+    async def clear_booster(self, ctx: commands.Context, *, member: discord.Member = None):
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+        role = discord.utils.get(ctx.guild.roles, id=741838175919538176)
+        if role in ctx.author.roles:
+            remove_boosters()
+
+    @commands.command()
+    async def booster(self, ctx: commands.Context, *args):
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+
+        if ctx.channel.id == 773211644167192637:
+
+            cost = get_cost(ctx.author, 100)
+            account_balance = get_money(ctx.author)
+
+            if args[0].upper() == "MONEY" or args[0].upper() == "XP":
+                if not has_money(ctx.author, cost):
+                    embed = discord.Embed(title="Du hast nicht genug Money!",
+                                          description="Du brauchst mindestens "+ str(cost) +", aber du hast leider nur "+ str(round(account_balance,2))+" !",
+                                          color=0xFF0000)
+                    embed.set_author(name="Booster",
+                                     icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    await ctx.channel.send(embed=embed, delete_after=7)
+                    return
+
+                withdraw_money(ctx.author, cost)
+
+                set_booster(args[0].lower(), 1.25, 120)
+
+                embed = discord.Embed(title="📢BOOOSSSTTTERRR!",
+                                      description=ctx.author.name + " hat "+args[0].lower()+" für 2h geboostet! Jeder Spieler bekommt jetzt 1.25x mehr " + args[0].lower() + "!",
+                                      color=0x00FF00)
+                embed.set_author(name="Booster",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await ctx.channel.send(embed=embed)
+            else:
+
+                embed = discord.Embed(title="Erlaubte Booster:",
+                                      description="money, xp",
+                                      color=0xFF0000)
+                embed.set_author(name="Booster",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await ctx.channel.send(embed=embed, delete_after=7)
+
+
 
 
     @commands.command()

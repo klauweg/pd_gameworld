@@ -129,7 +129,7 @@ class Game(commands.Cog):
                                 deposit_money(self.players[self.currentPlayer], 10)
                                 self.running = False
                             elif self.is_undecided():
-                                embed = discord.Embed(title="Undecided",colour=discord.Colour.green())
+                                embed = discord.Embed(title=":tada: Unentschieden :tada:",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
                                 for player in self.players:
                                     add_to_stats(player, "TicTacToe", 0, 0, 1)
