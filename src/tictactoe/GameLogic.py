@@ -98,9 +98,10 @@ class Game(commands.Cog):
 
         # Spiel beenden:
         for player in self.players:
-            add_to_stats(player, "TicTacToe", 0, 1)
+            add_to_stats(player, "TicTacToe", 0, 1, 0)
             add_xp(player, 5)
             self.queue.release_player(player.id)
+
         await asyncio.sleep(5)
         await self.gamechannel.delete()
         self.bot.remove_cog(self)
@@ -124,12 +125,14 @@ class Game(commands.Cog):
                                 embed = discord.Embed(title=":tada: Player " + self.players[self.currentPlayer].name +" hat gewonnen :tada:",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
                                 add_xp(self.players[self.currentPlayer], 20)
-                                add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0)
+                                add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0, 0)
                                 deposit_money(self.players[self.currentPlayer], 10)
                                 self.running = False
                             elif self.is_undecided():
                                 embed = discord.Embed(title="Undecided",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
+                                for player in self.players:
+                                    add_to_stats(player, "TicTacToe", 0, 0, 1)
                                 self.running = False
                             else:
                                 self.currentPlayer = (self.currentPlayer + 1) % 2

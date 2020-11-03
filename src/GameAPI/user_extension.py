@@ -50,7 +50,7 @@ def get_level(member):
 
 def get_player_role(member):
     rank = "Neuling"
-    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ältester"}
+    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ã„ltester"}
     member_level = get_level(member)
     for key in roles:
         if member_level >= key:
@@ -161,7 +161,7 @@ def equip_pet(member, name):
     if equipped_pets_amount == 5:
         return "Du hast die Maximale Anzahl an Pets erreicht! Unequippe erst ein Pet!"
     for pet in get_pets(member):
-        if pet.name == name.upper() and pet.equipped == False:
+        if pet.name.upper() == name.upper() and pet.equipped == False:
             pet.equipped = True
             update_data()
             return "Du hast " + name + " Equipped"
@@ -169,9 +169,9 @@ def equip_pet(member, name):
 def unequip_pet(member, name):
     if not search_pet(member, name):
         return "Du hast dieses Pet nicht!"
-    if is_pet_equipped(member, name.upper()):
+    if is_pet_equipped(member, name):
         for pet in get_pets(member):
-            if pet.name == name.upper() and pet.equipped == True:
+            if pet.name.upper() == name.upper() and pet.equipped == True:
                 pet.equipped = False
                 update_data()
                 return "Du hast " + name + " Unequipped"
@@ -180,7 +180,7 @@ def unequip_pet(member, name):
 
 def is_pet_equipped(member, name):
     for pet in get_pets(member):
-        if pet.name == name.upper() and pet.equipped == True:
+        if pet.name.upper() == name.upper() and pet.equipped == True:
             return True
     return False
 
@@ -192,62 +192,33 @@ def get_pet_amount(member):
 ###################### MoneyMiner
 
 def get_moneyminer(member):
-    account = get_account( member )
-    if "moneyminer" not in account:
-        account["moneyminer"] = {}
-    return account["moneyminer"]
-
+    return data[str(member.id)].setdefault("moneyminer", {"pa_level": 0, "bp_level": 1, "bp_fill": 0})
 
 def levelup_backpack(member):
-    moneyminer = get_moneyminer(member)
-    if "bp_level" not in moneyminer:
-        moneyminer["bp_level"] = 1
-    moneyminer["bp_level"] += 1
+    get_moneyminer(member)["bp_level"] += 1
     update_data()
-    return moneyminer["bp_level"]
+    return get_moneyminer(member)["bp_level"]
 
 def levelup_pickaxe(member):
-    moneyminer = get_moneyminer(member)
-    if "pa_level" not in moneyminer:
-        moneyminer["pa_level"] = 1
-    moneyminer["pa_level"] += 1
+    get_moneyminer(member)["pa_level"] += 1
     update_data()
-    return moneyminer["pa_level"]
+    return get_moneyminer(member)["pa_level"]
 
 def backpack_set_money(member, money):
-    moneyminer = get_moneyminer(member)
-    if "bp_fill" not in moneyminer:
-        moneyminer["bp_fill"] = 0
-    moneyminer["bp_fill"] = money
+    get_moneyminer(member)["bp_fill"] = money
     update_data()
 
 def get_backpack_money(member):
-    moneyminer = get_moneyminer(member)
-    if "bp_fill" not in moneyminer:
-        moneyminer["bp_fill"] = 0
-        update_data()
-    return moneyminer["bp_fill"]
+    return get_moneyminer(member)["bp_fill"]
 
 def get_max_backpack(member):
-    moneyminer = get_moneyminer(member)
-    if "bp_level" not in moneyminer:
-        moneyminer["bp_level"] = 1
-        update_data()
-    return 30 * moneyminer["bp_level"]
+    return 30 * get_moneyminer(member)["bp_level"]
 
 def get_backpack_level(member):
-    moneyminer = get_moneyminer(member)
-    if "bp_level" not in moneyminer:
-        moneyminer["bp_level"] = 1
-    update_data()
-    return moneyminer["bp_level"]
+    return get_moneyminer(member)["bp_level"]
 
 def get_pickaxe_level(member):
-    moneyminer = get_moneyminer(member)
-    if "pa_level" not in moneyminer:
-        moneyminer["pa_level"] = 1
-    update_data()
-    return moneyminer["pa_level"]
+    return get_moneyminer(member)["pa_level"]
 
 
 

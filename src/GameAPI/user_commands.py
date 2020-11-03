@@ -4,8 +4,7 @@ import random
 import discord
 from discord.ext import commands
 
-from src.GameAPI.user_extension import get_pets, add_pet, update_player_nick, has_money, deposit_money, withdraw_money, \
-    set_money, clear_all_pets, add_xp, set_xp, get_pet_amount, remove_pet, update_player_role, equip_pet, unequip_pet, clear_stats, get_cost, get_xp, remove_xp, get_money
+from src.GameAPI.user_extension import *
 
 
 class Commands(commands.Cog):
@@ -79,7 +78,7 @@ class Commands(commands.Cog):
             await ctx.message.delete()
         except discord.Forbidden:
             pass
-        role = discord.utils.get(ctx.guild.roles, id=744630374855868456)
+        role = discord.utils.get(ctx.guild.roles, id=741838175919538176)
         if role in ctx.author.roles:
             members = ctx.guild.members
             for member in members:
@@ -92,7 +91,7 @@ class Commands(commands.Cog):
             await ctx.message.delete()
         except discord.Forbidden:
             pass
-        role = discord.utils.get(ctx.guild.roles, id=744630374855868456)
+        role = discord.utils.get(ctx.guild.roles, id=741838175919538176)
         if role in ctx.author.roles:
             members = ctx.guild.members
             for member in members:
