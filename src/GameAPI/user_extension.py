@@ -34,15 +34,7 @@ def set_booster(booster, multiplikator, duration):
     update_data()
 
 def get_booster_multiply(booster):
-    timestamp = data.get("booster", {}).get(booster.lower(), {"created": time.time()})["created"]
-    duration_min = data.get("booster", {}).get(booster.lower(), {"time": 0})["time"]
-    if (time.time() - timestamp) > (duration_min*60):
-        try:
-            data.setdefault("booster", {}).pop(booster.lower())
-        except KeyError:
-            pass
-    print(data.get("booster", {}))
-    return data.setdefault("booster", {}).setdefault(booster, {"multiply": 1})["multiply"]
+    return 1
 
 def remove_boosters():
     data["booster"] = {}
@@ -74,7 +66,7 @@ def get_level(member):
 
 def get_player_role(member):
     rank = "Neuling"
-    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 50: "Ältester"}
+    roles = {0: "Neuling", 10: "Spielender", 20: "Erfahrener", 40: "Ältester"}
     member_level = get_level(member)
     for key in roles:
         if member_level >= key:
