@@ -4,7 +4,7 @@ import random
 import discord
 from discord.ext import commands
 
-from src.GameAPI.user_extension import *
+from GameAPI.user_extension import *
 
 
 class Commands(commands.Cog):

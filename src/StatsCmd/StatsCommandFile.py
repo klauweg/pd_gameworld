@@ -1,8 +1,7 @@
 import discord
 from discord.ext import commands
 
-from src.GameAPI.user_extension import add_xp, get_xp, get_level, get_money, get_pet_amount, get_stats, get_pickaxe_level, get_backpack_level, get_player_role
-
+from GameAPI.user_extension import *
 
 class StatsCommand(commands.Cog):
     @commands.command()

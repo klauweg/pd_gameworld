@@ -8,7 +8,7 @@ from parse import parse
 import logging
 
 from GameAPI import user_commands
-from src.bugreport import BugReport
+from bugreport import BugReport
 from GameAPI.Book import Book
 
 from GameAPI.Queue import Queue
@@ -18,7 +18,7 @@ import tictactoe.GameLogic
 import connectfour.Gamelogic
 import hangman.GameLogic
 import onewordchallange.GameLogic
-from src.MoneyMiner import miner_commands
+from MoneyMiner import miner_commands
 
 logging.basicConfig(level=logging.INFO)
 

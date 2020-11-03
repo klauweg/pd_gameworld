@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from GameAPI.PlayerDataApi import Utils
 
-from src.GameAPI.user_extension import get_backpack_money, get_max_backpack, get_backpack_level, get_pickaxe_level, has_money, levelup_backpack, levelup_pickaxe, withdraw_money, backpack_set_money, deposit_money
+from GameAPI.user_extension import *
 
 
 
