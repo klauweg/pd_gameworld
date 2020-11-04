@@ -134,7 +134,7 @@ async def on_ready():
         logging.info("cleanup " + channel.name)
         await channel.purge()
 
-    deletechannels = [771745879723606107, 741835965164814458, 772214299997110292, 743797646883553370, 772515089181310977, 772543056640868404, 772543093714714666]
+    deletechannels = [771745879723606107, 741835965164814458, 772214299997110292, 743797646883553370, 772515089181310977, 772543056640868404, 772543093714714666, 773486403073736735, 773486430047305728]
     for channelid in deletechannels:
         channel = client.get_channel(channelid)
         logging.info("cleanup " + channel.name)
@@ -155,6 +155,8 @@ async def on_ready():
         games[channelid][0](gamequeue)  # Gamecontroller des Spiels erzeugen, queue übergeben
 
     client.add_cog(miner_commands.MineCommands(client))
+
+    print(await client.guilds[0].invites())
 
 
 with open("../resources/privates.txt") as token_file:

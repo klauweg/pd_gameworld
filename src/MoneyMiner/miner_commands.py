@@ -12,7 +12,7 @@ class MineCommands(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.gamechannels = [772515089181310977, 772543056640868404, 772543093714714666]
+        self.gamechannels = [772515089181310977, 772543056640868404, 772543093714714666, 773486403073736735, 773486430047305728]
         self.gamemessages = {}
         asyncio.create_task(self.timer())
 
@@ -40,7 +40,7 @@ class MineCommands(commands.Cog):
                 await self.gamemessages[ctx.author].delete()
             except:
                 pass
-            self.gamemessages[ctx.author] = await ctx.channel.send(embed=embed)
+            self.gamemessages[ctx.author] = await ctx.channel.send(embed=embed,delete_after=120)
         else:
             self.gamemessages[ctx.author] = await ctx.channel.send(embed=embed,delete_after=120)
         return
@@ -68,7 +68,7 @@ class MineCommands(commands.Cog):
                 await self.gamemessages[ctx.author].delete()
             except:
                 pass
-            self.gamemessages[ctx.author] = await ctx.channel.send(embed=embed)
+            self.gamemessages[ctx.author] = await ctx.channel.send(embed=embed,delete_after=120)
         else:
             self.gamemessages[ctx.author] = await ctx.channel.send(embed=embed,delete_after=120)
         return
@@ -143,7 +143,7 @@ class MineCommands(commands.Cog):
         backpack_money = get_backpack_money(ctx.author)
         deposit_money(ctx.author, backpack_money)
         backpack_set_money(ctx.author, 0)
-        embed = discord.Embed(title="Claimed!", description="Du hast " + str(backpack_money) + " aus dem Rucksack geholt!", color=0x58ff46)
+        embed = discord.Embed(title="Claimed!", description=ctx.author.name + " hat " + str(backpack_money) + " aus seinem Rucksack geholt!", color=0x58ff46)
         embed.set_author(name="MoneyMiner",
                          icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(

@@ -76,7 +76,7 @@ class Game(commands.Cog):
         self.not_guessing_player = random.choice(self.players)
         self.players.remove(self.not_guessing_player)
 
-        embed = discord.Embed(title="Warum sehe ich nichts?",description=self.not_guessing_player.display_name + " hat eine Private nachricht bekommen. Dort muss er das Wort eingeben welches die anderen erraten müssen",color=0x58ff46)
+        embed = discord.Embed(title="Warum sehe ich nichts?",description=self.not_guessing_player.display_name + " hat eine Private nachricht bekommen. Dort muss er/sie/es das Wort eingeben welches die anderen erraten müssen",color=0x58ff46)
         embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         await self.gamechannel.send(embed=embed, delete_after=60)

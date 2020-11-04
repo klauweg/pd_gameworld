@@ -17,6 +17,7 @@ file_path = "../resources/player_data.pickle"
 
 print("loaded")
 
+
 try:
     with open(file_path,"rb") as fp:
         data = pickle.load(fp)
@@ -30,10 +31,17 @@ def update_data():
 
 ############## BOOSTER
 def set_booster(booster, multiplikator, duration):
-    data.setdefault("booster", {})[booster.lower()] = {"multiply": multiplikator, "time": duration, "created": time.time()}
+    data["booster"][booster.lower()] = {"multiply": multiplikator, "time": duration, "created": time.time()}
     update_data()
 
-def get_booster_multiply(booster):
+def get_booster_multiply(boostername):
+    booster =  data["booster"].get(boostername.lower(), None)
+    if booster:
+        if time.time() - booster["created"] > booster["time"]*60:
+            data["booster"].pop(boostername.lower())
+            return 1
+        else:
+            return booster["multiply"]
     return 1
 
 def remove_boosters():
@@ -141,7 +149,7 @@ def get_cost(member, cost):
     for pet in get_pets(member):
         extra_money += cost * pet.money_multiply - cost
     #Spitzhackenlevel von MoneyMiner einberechnen
-    extra_money += get_pickaxe_level(member) * 10
+    extra_money += get_pickaxe_level(member) * 8
     #4/5 dazuberechnen damit man durch haustiere trotzdem noch vorteile hat
     cost += extra_money * (4/5)
     #Runden

@@ -69,6 +69,95 @@ class Commands(commands.Cog):
                                     inline=False)
 
                     await ctx.author.send(embed=embed, delete_after=60)
+                    await asyncio.sleep(0.21)
+
+    @commands.command()
+    async def lock(self, ctx: commands.Context, *args):
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+        role = discord.utils.get(ctx.guild.roles, id=741837884583313440)
+        if role in ctx.author.roles:
+            embed = discord.Embed(title="Achtung!",
+                                  description="Bis der Bot wieder gestartet ist, könnt ihr nur in manchen Channels schreiben!",
+                                  color=0x00FF00)
+            embed.set_author(name="Help",
+                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            await self.client.get_channel(741835032020385802).send(embed=embed)
+            non_block_channels = [742069974889267281, 743798512663265290, 743805821418209321, 746680429045874810, 741836337006772306, 741963559705247846, 741965363549569034]
+            for channel in ctx.guild.text_channels:
+                if not channel.id in non_block_channels:
+                    role = ctx.guild.get_role(741823660188500008)
+                    await channel.set_permissions(role, send_messages=False)
+                    await asyncio.sleep(0.21)
+            await self.client.get_channel(741835032020385802).set_permissions(role, send_messages=True)
+
+
+    @commands.command()
+    async def unlock(self, ctx: commands.Context, *args):
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+        role = discord.utils.get(ctx.guild.roles, id=741837884583313440)
+        if role in ctx.author.roles:
+            non_block_channels = [742069974889267281, 743798512663265290, 743805821418209321, 746680429045874810, 741836337006772306, 741963559705247846, 741965363549569034]
+            for channel in ctx.guild.text_channels:
+                if not channel.id in non_block_channels:
+                    role = ctx.guild.get_role(741823660188500008)
+                    await channel.set_permissions(role, send_messages=True)
+                    await asyncio.sleep(0.21)
+            embed = discord.Embed(title="Achtung!",
+                                  description="Der Bot ist wieder an, ihr könnt wieder schreiben!",
+                                  color=0x00FF00)
+            embed.set_author(name="Help",
+                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+            await self.client.get_channel(741835032020385802).send(embed=embed)
+
+    @commands.command()
+    async def give_pet(self, ctx: commands.Context, *args):
+        arguments = list(args)
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+        role = discord.utils.get(ctx.guild.roles, id=741838175919538176)
+        if role in ctx.author.roles:
+            if len(arguments) >= 5:
+                rarity = arguments.pop(-1)
+                money_m = arguments.pop(-1)
+                xp_m = arguments.pop(-1)
+                name = arguments.pop(-1)
+                member = ctx.guild.get_member_named(' '.join(arguments))
+                if member:
+                    try:
+                        add_pet(member, name, float(xp_m), float(money_m), rarity)
+                    except ValueError:
+                        embed = discord.Embed(title="Du musst eine Zahl angeben!",
+                                              description="!give_pet [spieler] [petname] [xp_multiply] [money_multiply] [rarity]",
+                                              color=0xFF0000)
+                        embed.set_author(name="Money",
+                                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        await ctx.channel.send(embed=embed, delete_after=7)
+                        return
+                else:
+                        embed = discord.Embed(title="Spieler " + ' '.join(arguments) + "nicht gefunden",
+                                              description="Bitte versuche es erneut!",
+                                              color=0xFF0000)
+                        embed.set_author(name="Money",
+                                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        await ctx.channel.send(embed=embed, delete_after=7)
+                        return
+            else:
+                embed = discord.Embed(title="Falsche Benutzung!",
+                                      description="!give_pet [spieler] [petname] [xp_multiply] [money_multiply] [rarity]",
+                                      color=0xFF0000)
+                embed.set_author(name="Money",
+                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                await ctx.channel.send(embed=embed, delete_after=7)
+                return
+
 
 
     @commands.command()
@@ -258,7 +347,7 @@ class Commands(commands.Cog):
                 await ctx.channel.send(embed=embed, delete_after=7)
                 return
 
-            embed = discord.Embed(title="Antwort:",
+            embed = discord.Embed(title="Antwort: ( " + ctx.author.name + " )",
                                   description=equip_pet(ctx.author, args[0]),
                                   color=0xFF8800)
             embed.set_author(name="Haustier",
@@ -283,7 +372,7 @@ class Commands(commands.Cog):
                 await ctx.channel.send(embed=embed, delete_after=7)
                 return
 
-            embed = discord.Embed(title="Antwort:",
+            embed = discord.Embed(title="Antwort: ( " + ctx.author.name + " )",
                                   description=unequip_pet(ctx.author, args[0]),
                                   color=0xFF8800)
             embed.set_author(name="Haustier",
