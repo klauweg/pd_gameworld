@@ -76,7 +76,7 @@ class Game(commands.Cog):
         self.not_guessing_player = random.choice(self.players)
         self.players.remove(self.not_guessing_player)
 
-        embed = discord.Embed(title="Warum sehe ich nichts?",description=self.not_guessing_player.display_name + " hat eine Private nachricht bekommen. Dort muss er das Wort eingeben welches die anderen erraten müssen",color=0x58ff46)
+        embed = discord.Embed(title="Warum sehe ich nichts?",description=self.not_guessing_player.display_name + " hat eine Private nachricht bekommen. Dort muss er/sie/es das Wort eingeben welches die anderen erraten müssen",color=0x58ff46)
         embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         await self.gamechannel.send(embed=embed, delete_after=60)
@@ -98,11 +98,13 @@ class Game(commands.Cog):
                 await self.gamechannel.send(embed=embed)
                 break;
 
-        self.queue.release_player(self.not_guessing_player.id)
         for player in self.players:
-            add_to_stats(player, "HangMan", 0, 1)
-            await add_xp(player, 5)
+            add_to_stats(player, "HangMan", 0, 1, 0)
+            add_xp(player, 5)
             self.queue.release_player(player.id)
+        add_xp(self.not_guessing_player, 5)
+        add_to_stats(self.not_guessing_player,"HangMan", 0,1)
+        self.queue.release_player(self.not_guessing_player.id)
         self.bot.remove_cog(self)
         await asyncio.sleep(10)
         await self.gamechannel.delete()
@@ -143,9 +145,10 @@ class Game(commands.Cog):
                     embed = discord.Embed(title=":tada: " + message.author.display_name + " hat das Wort erraten! :tada:",description="Danke fürs Spielen!", color=0x58ff46)
                     embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                     embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed.add_field(name="Das Wort war:", value=self.correct_word, inline=False)
                     await self.gamechannel.send(embed=embed)
-                    await add_xp(message.author, 30)
-                    add_to_stats(message.author, "HangMan", 1, 0)
+                    add_xp(message.author, 30)
+                    add_to_stats(message.author, "HangMan", 1, 0, 0)
                     deposit_money(message.author, 20)
                     self.running = False
                 elif self.is_valid_guess(message.content.upper()):
@@ -155,9 +158,10 @@ class Game(commands.Cog):
                         embed = discord.Embed(title="Du hast verloren:", description="Hangman wurde erhängt!", color=0x58ff46)
                         embed.set_author(name="Galgenmännchen",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
                         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed.add_field(name="Das Wort war:", value=self.correct_word, inline=False)
                         await self.gamechannel.send(embed=embed)
-                        await add_xp(self.not_guessing_player, 30)
-                        add_to_stats(self.not_guessing_player, "HangMan", 1, 0)
+                        add_xp(self.not_guessing_player, 30)
+                        add_to_stats(self.not_guessing_player, "HangMan", 1, 0, 0)
                         deposit_money(self.not_guessing_player, 20)
                         self.running = False
                 self.turnevent.set()

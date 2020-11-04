@@ -9,7 +9,7 @@ import io
 
 from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
 
-channel_prefix = "🔴🔵tictactoe-"
+channel_prefix = "📫tictactoe-"
 
 class GameControl():
     def __init__(self, queue):
@@ -98,9 +98,10 @@ class Game(commands.Cog):
 
         # Spiel beenden:
         for player in self.players:
-            add_to_stats(player, "TicTacToe", 0, 1)
-            await add_xp(player, 5)
+            add_to_stats(player, "TicTacToe", 0, 1, 0)
+            add_xp(player, 5)
             self.queue.release_player(player.id)
+
         await asyncio.sleep(5)
         await self.gamechannel.delete()
         self.bot.remove_cog(self)
@@ -123,13 +124,15 @@ class Game(commands.Cog):
                             if self.compute_winner(self.playerindex[self.currentPlayer]):
                                 embed = discord.Embed(title=":tada: Player " + self.players[self.currentPlayer].name +" hat gewonnen :tada:",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
-                                await add_xp(self.players[self.currentPlayer], 20)
-                                add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0)
+                                add_xp(self.players[self.currentPlayer], 20)
+                                add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0, 0)
                                 deposit_money(self.players[self.currentPlayer], 10)
                                 self.running = False
                             elif self.is_undecided():
-                                embed = discord.Embed(title="Undecided",colour=discord.Colour.green())
+                                embed = discord.Embed(title=":tada: Unentschieden :tada:",colour=discord.Colour.green())
                                 await self.gamechannel.send(embed=embed)
+                                for player in self.players:
+                                    add_to_stats(player, "TicTacToe", 0, 0, 1)
                                 self.running = False
                             else:
                                 self.currentPlayer = (self.currentPlayer + 1) % 2

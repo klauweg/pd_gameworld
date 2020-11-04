@@ -1,3 +1,6 @@
 .idea
 /test/
 /resources/
+__pycache__
+*~
+

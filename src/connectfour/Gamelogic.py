@@ -112,8 +112,8 @@ class Game(commands.Cog):
         await asyncio.sleep(5)
         await self.gamechannel.delete()
         for player in self.players:
-            add_to_stats(player, "ConnectFour", 0, 1)
-            await add_xp(player, 5)
+            add_to_stats(player, "VierGewinnt", 0, 1, 0)
+            add_xp(player, 5)
             self.queue.release_player(player.id)
         self.bot.remove_cog(self)
 
@@ -154,15 +154,17 @@ class Game(commands.Cog):
                             colour=discord.Colour.green())
                         await self.gamechannel.send(embed=embed, delete_after=10)
                         # Statistik#
-                        await add_xp(self.players[self.nextplayer], 25)
-                        add_to_stats(self.players[self.nextplayer], "VierGewinnt", 1, 0)
+                        add_xp(self.players[self.nextplayer], 25)
+                        add_to_stats(self.players[self.nextplayer], "VierGewinnt", 1, 0, 0)
                         deposit_money(self.players[self.nextplayer], 20)
                         # Selbstzerstörung:
                         self.running = False
                     elif not 0 in chain(*self.gamefield):
                         embed = discord.Embed(
-                            title="Undecided",
+                            title=":tada: Unentschieden :tada:",
                             colour=discord.Colour.green())
+                        for player in self.players:
+                            add_to_stats(player, "TicTacToe", 0, 0, 1)
                         await self.gamechannel.send(embed=embed, delete_after=10)
                         # Selbstzerstörung:
                         self.running = False

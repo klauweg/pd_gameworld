@@ -7,6 +7,7 @@ class Pet():
         self.xp_multiply = xpm
         self.money_multiply = mym
         self.rarity = rarity
+        self.equipped = False
 
     def rename(self, new_name):
         self.display_name = new_name
