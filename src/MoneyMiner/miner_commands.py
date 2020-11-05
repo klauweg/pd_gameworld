@@ -6,12 +6,12 @@ from GameAPI.PlayerDataApi import Utils
 
 from GameAPI.user_extension import *
 
+from myclient import client
 
 
 class MineCommands(commands.Cog):
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self):
         self.gamechannels = [772515089181310977, 772543056640868404, 772543093714714666, 773486403073736735, 773486430047305728]
         self.gamemessages = {}
         asyncio.create_task(self.timer())
@@ -152,7 +152,7 @@ class MineCommands(commands.Cog):
 
     async def timer(self):
         while True:
-            members = self.client.guilds[0].members
+            members = client.guilds[0].members
             for member in members:
                 if member.status == discord.Status.online:
                     pickaxe_level = get_pickaxe_level(member)
@@ -165,7 +165,10 @@ class MineCommands(commands.Cog):
                         backpack_set_money(member, backpack_fill + money_to_earn)
             await asyncio.sleep(60)
 
-
+# Aufräumen beim Start:
+@client.event
+async def on_ready():
+    client.add_cog(MineCommands())
 
 
 

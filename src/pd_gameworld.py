@@ -1,64 +1,21 @@
-import asyncio
+import logging
+logging.basicConfig( level=logging.INFO )
+logger = logging.getLogger("main")
+
+from myclient import client
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 
-from parse import parse
-import logging
-
-from GameAPI import user_commands
-from bugreport import BugReport
+import GameAPI.user_commands
 from GameAPI.Book import Book
+import GameAPI.Queue
+import bugreport
+import MoneyMiner
 
-from GameAPI.Queue import Queue
-from StatsCmd.StatsCommandFile import StatsCommand
-
-import tictactoe.GameLogic
-import connectfour.Gamelogic
-import hangman.GameLogic
-import onewordchallange.GameLogic
-from MoneyMiner import miner_commands
-
-logging.basicConfig(level=logging.INFO)
-
-intents = discord.Intents.all()
-client = commands.Bot(command_prefix="!", intents=intents)
-
-client.add_cog(BugReport.BugReport(client))
-client.add_cog(StatsCommand())
-client.add_cog(user_commands.Commands(client))
-
-# join-channelid -> Spieleklasse, Queuename, (Queue)
-games = {
-    743463967996903496: [hangman.GameLogic.GameControl, "Galgenmännchen"],
-    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe"],
-    743425069216170024: [connectfour.Gamelogic.GameControl, "VierGewinnt"],
-    771386889927262248: [onewordchallange.GameLogic.GameControl, "OneWordChallange"]
-}
-
-
-# Jemand will einem Spiel joinen und landet in der Queue:
-@client.command()
-async def join(ctx: commands.Context):
-    await ctx.message.delete()
-    if ctx.channel.id in games:
-        queue = games[ctx.channel.id][2]
-        await queue.append(ctx)
-
-
-# Jemand will eine Queue verlassen:
-@client.command()
-async def leave(ctx: commands.Context):
-    await ctx.message.delete()
-    if ctx.channel.id in games:
-        queue = games[ctx.channel.id][2]
-        await queue.remove(ctx)
 
 
 client.remove_command("help")
-
-
 @client.command()
 async def help(ctx: commands.Context):
     await ctx.message.delete()
@@ -91,53 +48,19 @@ async def purge(ctx: commands.Context, *, member: discord.Member = None):
         if isinstance(ctx.channel, discord.channel.TextChannel):
             await ctx.channel.purge()
 
-
-
-
 # Neue User im Welcome Channel begrüßen:
 @client.event
 async def on_member_join(member: discord.Member):
     channel = client.get_channel(741965363549569034)
     await channel.send(f"""Wilkommen auf **PD-GAMEWORLD** {member.mention} !""")
 
-
-# Nicht existierende oder fehlerhafte Commands werden aus dem Channel gelöscht:
-@client.event
-async def on_command_error(ctx, error):
-    if isinstance(error, CommandNotFound):
-        try:
-            await ctx.message.delete()
-        except:
-            pass
-        return
-    elif isinstance(error, MissingRequiredArgument):
-        try:
-            await ctx.message.delete()
-        except:
-            pass
-        return
-    else:
-        raise error
-
-
 # Aufräumen beim Start:
 @client.event
 async def on_ready():
-    # Alte Gamechannels löschen:
-    for channel in client.get_all_channels():
-        if parse("{}-{:d}", channel.name):
-            logging.info("delete " + channel.name)
-            await channel.delete()
-    # Inhalt der Join Channels löschen:
-    for channelid in games:
-        channel = client.get_channel(channelid)
-        logging.info("cleanup " + channel.name)
-        await channel.purge()
-
     deletechannels = [771745879723606107, 741835965164814458, 772214299997110292, 743797646883553370, 772515089181310977, 772543056640868404, 772543093714714666, 773486403073736735, 773486430047305728]
     for channelid in deletechannels:
         channel = client.get_channel(channelid)
-        logging.info("cleanup " + channel.name)
+        logger.info("cleanup " + channel.name)
         await channel.purge()
 
     helpchannel = client.get_channel(771745879723606107)
@@ -148,18 +71,7 @@ async def on_ready():
                      icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
     await helpchannel.send(embed=embed)
 
-    # Erzeugen der GameQueues und Spielekontrollobjekt koppeln:
-    for channelid in games:
-        gamequeue = Queue(games[channelid][1], client.get_channel(channelid))  # Queue erzeugen und Namen zuweisen
-        games[channelid].append(gamequeue)  # Die Queue dem Join Channel zuordnen
-        games[channelid][0](gamequeue)  # Gamecontroller des Spiels erzeugen, queue übergeben
-
-    client.add_cog(miner_commands.MineCommands(client))
-
-    print(await client.guilds[0].invites())
-
-
+# Start Client:
 with open("../resources/privates.txt") as token_file:
     token = token_file.readline()
-
 client.run(token)

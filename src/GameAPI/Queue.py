@@ -1,10 +1,17 @@
 import asyncio
 import logging
+logger=logging.getLogger("queue")
 
 import discord
+from discord.ext import commands
+from parse import parse
 
+import connectfour.Gamelogic
+import hangman.GameLogic
+import onewordchallange.GameLogic
+import tictactoe.GameLogic
 from GameAPI.PlayerDataApi import Utils
-
+from myclient import client
 
 class Queue:
     __queued_members={}   # member.id -> queuename
@@ -16,14 +23,14 @@ class Queue:
         self.queuename = name
         self.queue = []
         self.on_queue_change = None # Callbackfunktion für die Gamecontroller
-        logging.info( "Queue für "+self.queuename+" erstellt." )
+        logger.info( "Queue für "+self.queuename+" erstellt." )
 
     # Wenn sich der Inhalt der Queue verändert:
     def do_on_queue_change( self ):
-        logging.info( self.queuename + " queue changed:" )
-        logging.info( "  queued members: " + str(Queue.__queued_members) )
-        logging.info( "  playing members: " + str(Queue.__playing_members) )
-        logging.info( "  queue content: " + str(self.queue) )
+        logger.info( self.queuename + " queue changed:" )
+        logger.info( "  queued members: " + str(Queue.__queued_members) )
+        logger.info( "  playing members: " + str(Queue.__playing_members) )
+        logger.info( "  queue content: " + str(self.queue) )
 
         asyncio.create_task(self.send_queue_message())
 
@@ -107,4 +114,48 @@ class Queue:
         return ctx
     
 
+# join-channelid -> Spieleklasse, Queuename, (Queue)
+games = {
+    743463967996903496: [hangman.GameLogic.GameControl, "Galgenmännchen"],
+    741835475085557860: [tictactoe.GameLogic.GameControl, "TicTacToe"],
+    743425069216170024: [connectfour.Gamelogic.GameControl, "VierGewinnt"],
+    771386889927262248: [onewordchallange.GameLogic.GameControl, "OneWordChallange"]
+}
+
+
+# Jemand will einem Spiel joinen und landet in der Queue:
+@client.command()
+async def join(ctx: commands.Context):
+    await ctx.message.delete()
+    if ctx.channel.id in games:
+        queue = games[ctx.channel.id][2]
+        await queue.append(ctx)
+
+
+# Jemand will eine Queue verlassen:
+@client.command()
+async def leave(ctx: commands.Context):
+    await ctx.message.delete()
+    if ctx.channel.id in games:
+        queue = games[ctx.channel.id][2]
+        await queue.remove(ctx)
+
+@client.listen()
+async def on_ready():
+    logger.info("OnReadyEvent")
+    # Alte Gamechannels löschen:
+    for channel in client.get_all_channels():
+        if parse("{}-{:d}", channel.name):
+            logger.info("delete " + channel.name)
+            await channel.delete()
+    # Inhalt der Join Channels löschen:
+    for channelid in games:
+        channel = client.get_channel(channelid)
+        logger.info("cleanup " + channel.name)
+        await channel.purge()
+    # Erzeugen der GameQueues und Spielekontrollobjekt koppeln:
+    for channelid in games:
+        gamequeue = Queue(games[channelid][1], client.get_channel(channelid))  # Queue erzeugen und Namen zuweisen
+        games[channelid].append(gamequeue)  # Die Queue dem Join Channel zuordnen
+        games[channelid][0](gamequeue)  # Gamecontroller des Spiels erzeugen, queue übergeben
 

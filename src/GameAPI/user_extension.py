@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger("user_ext")
+
 import math
 import traceback
 
@@ -15,14 +18,14 @@ from GameAPI.Pet import Pet
 
 file_path = "../resources/player_data.pickle"
 
-print("loaded")
-
 
 try:
     with open(file_path,"rb") as fp:
         data = pickle.load(fp)
+        logger.info("Old setup loaded.")
 except FileNotFoundError:
     data = defaultdict( dict )
+    logger.info("New setup created.")
 
 def update_data():
     with open(file_path, "wb") as fp:
