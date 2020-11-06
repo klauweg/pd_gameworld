@@ -1,4 +1,7 @@
 import logging
+
+from GameAPI.party.Party import Party
+
 logger = logging.getLogger("user_cmd")
 
 import random
@@ -515,7 +518,10 @@ async def xp(ctx: commands.Context, *args):
 
 @client.command()
 async def stats(ctx: commands.Context, *args):
-    await ctx.message.delete()
+    try:
+        await ctx.message.delete()
+    except discord.Forbidden:
+        pass
 
     if ctx.channel.id == 741835965164814458:
         if len(args) == 0:
@@ -551,5 +557,8 @@ async def stats(ctx: commands.Context, *args):
                                 inline=False)
             await ctx.channel.send(embed=embed, delete_after=20)
             return
+
+
+
 
 

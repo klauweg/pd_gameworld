@@ -139,6 +139,7 @@ class MineCommands(commands.Cog):
         except discord.Forbidden:
             pass
         if not ctx.channel.id in self.gamechannels:
+            print("fals channel")
             return
         backpack_money = get_backpack_money(ctx.author)
         deposit_money(ctx.author, backpack_money)
@@ -166,7 +167,7 @@ class MineCommands(commands.Cog):
             await asyncio.sleep(60)
 
 # Aufräumen beim Start:
-@client.event
+@client.listen()
 async def on_ready():
     client.add_cog(MineCommands())
 

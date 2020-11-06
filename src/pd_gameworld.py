@@ -11,7 +11,7 @@ import GameAPI.user_commands
 from GameAPI.Book import Book
 import GameAPI.Queue
 import bugreport
-import MoneyMiner
+import MoneyMiner.miner_commands
 
 
 
