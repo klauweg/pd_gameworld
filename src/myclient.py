@@ -3,8 +3,6 @@ from discord.ext import commands
 from discord.ext.commands import MissingRequiredArgument, CommandNotFound
 
 import logging
-
-
 loggger = logging.getLogger("myclient")
 
 intents = discord.Intents.all()
@@ -28,3 +26,13 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
+
+class MyEmbed( discord.Embed ):
+    def __init__( self, *args, name="", **kwargs ):
+        super().__init__( *args, **kwargs )
+        self.set_thumbnail(url="https://cdn.discordapp.com/app-icons/"
+                "742032003125346344/"
+                "e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        self.set_author(name=name, icon_url="https://cdn.discordapp.com/"
+               "app-icons/742032003125346344/"
+               "e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
