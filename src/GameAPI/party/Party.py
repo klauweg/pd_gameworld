@@ -18,6 +18,9 @@ class Party():
         self.playing = False
         self.invite_messages = []
 
+    def __del__(self):
+        logger.info("Party of {} deleted.".format( self.owner.name ) )
+        
                 
 ##############################################################################
 # Party commands:
@@ -136,9 +139,8 @@ class PartyCog( commands.Cog ):
             await ctx.channel.send(embed=embed, delete_after=7)
             await asyncio.sleep(7)
             #CHANNEL LÖSCHEN
-            partys.remove( party )
+            partys.pop( ctx.channel ) # Referenz löschen -> GC
             await ctx.channel.delete()
-            logger.info("Party deleted by owner")
         else:
             party.members.remove(ctx.author)
             await party.partychannel.set_permissions(ctx.author, read_messages=False)
