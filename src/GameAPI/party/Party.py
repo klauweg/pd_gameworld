@@ -5,7 +5,7 @@ import asyncio
 
 import discord
 from discord.ext import commands
-from myclient import client
+from myclient import client, MyEmbed
 
 class Party(commands.Cog):
 
@@ -59,40 +59,29 @@ class Party(commands.Cog):
                 await payload.message.delete()
                 self.members.append(member)
                 await self.partychannel.set_permissions(member, read_messages=True)
-                embed = discord.Embed(title=member.name + " hat die Party Anfrage angenommen!",
-                                      description="",
-                                      color=0x00FF00)
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_author(name="Party",
-                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = MyEmbed(name = "Party",
+                      title=member.name + " hat die Party Anfrage angenommen!",
+                      description="",
+                      color=0x00FF00)
                 await self.partychannel.send(embed=embed, delete_after=7)
-                embed = discord.Embed(title="Du hast die Party Anfrage angenommen",
-                                      description="( Es wurde für euch ein PartyChannel erstellt )",
-                                      color=0x00FF00)
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_author(name="Party",
-                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = MyEmbed(name = "Party",
+                      title="Du hast die Party Anfrage angenommen",
+                      description="( Es wurde für euch ein PartyChannel erstellt )",
+                      color=0x00FF00)
                 await payload.message.channel.send(embed=embed, delete_after=7)
             elif payload.emoji == "🚫":
                 self.invite_messages.remove(payload.message)
                 await payload.message.delete()
-                embed = discord.Embed(title=member.name + " hat die Party Anfrage abgelehnt!",
-                                      description="",
-                                      color=0xFF0000)
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_author(name="Party",
-                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = MyEmbed(name = "Party",
+                      title=member.name + " hat die Party Anfrage abgelehnt!",
+                      description="",
+                      color=0xFF0000)
                 await self.partychannel.send(embed=embed, delete_after=7)
-                embed = discord.Embed(title="Du hast die Party Anfrage Abgelehnt",
-                                      description="( Frage nach einer erneuten Einladung wenn dies nicht gewollt war )",
-                                      color=0xFFFF00)
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_author(name="Party",
-                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = MyEmbed(name="Party",
+                      title="Du hast die Party Anfrage Abgelehnt",
+                      description="( Frage nach einer erneuten Einladung"
+                                  " wenn dies nicht gewollt war )",
+                      color=0xFFFF00)
                 await payload.message.channel.send(embed=embed, delete_after=7)
             else:
                 await payload.message.remove_reaction(payload.emoji, member)  # remove add
@@ -115,48 +104,41 @@ async def party(ctx: commands.Context, *args):
                     member = ctx.guild.get_member_named(args[1])
                     if not member == None:
                         if not member in party.members and not member == party.owner:
-                            embed = discord.Embed(title="Der Spieler " + party.owner.name + " hat dich in eine Party eingeladen!",
-                                                  description="( Klicke auf den Haken um die Einladung zu akzeptieren )",
-                                                  color=0x00FF00)
-                            embed.set_thumbnail(
-                                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            embed.set_author(name="Party",
-                                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            embed = MyEmbed(name="Party",
+                                  title="Der Spieler " + party.owner.name +
+                                      " hat dich in eine Party eingeladen!",
+                                  description="( Klicke auf den Haken um "
+                                      "die Einladung zu akzeptieren )",
+                                  color=0x00FF00)
                             invite_message = await member.send(embed=embed)
                             await invite_message.add_reaction("🚫")
                             await invite_message.add_reaction("✅")
                             party.invite_messages.append(invite_message)
 
-                            embed = discord.Embed(title="Der Spieler " + member.name + " wurde in die Party eingeladen!", description="Bitte warte, bis er die Einladung akzeptiert", color=0x00FF00)
-                            embed.set_thumbnail( url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            embed.set_author(name="Party", icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            embed = MyEmbed(name="Party", title="Der Spieler " +
+                                  member.name + " wurde in die Party eingeladen!",
+                                  description="Bitte warte, bis er die "
+                                  "Einladung akzeptiert", color=0x00FF00)
                             await party.partychannel.send(embed=embed, delete_after=7)
                         else:
-                            embed = discord.Embed(title="Der Spieler ist bereits in deiner Party!",
-                                                  description="",
-                                                  color=0xFF0000)
-                            embed.set_thumbnail(
-                                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                            embed.set_author(name="Party",
-                                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                            embed = MyEmbed(name="Party", 
+                                  title="Der Spieler ist bereits in deiner Party!",
+                                  description="",
+                                  color=0xFF0000)
                             await party.partychannel.send(embed=embed, delete_after=7)
                     else:
-                        embed = discord.Embed(title="Dieser Spieler existiert nicht",
-                                              description="( Groß und klein Schreibung beachten! )",
-                                              color=0xFF0000)
-                        embed.set_thumbnail(
-                            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                        embed.set_author(name="Party",
-                                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                        embed = MyEmbed(name="Party",
+                                  title="Dieser Spieler existiert nicht",
+                                  description="( Groß und klein Schreibung beachten! )",
+                                  color=0xFF0000)
                         await party.partychannel.send(embed=embed, delete_after=7)
                 else:
-                    embed = discord.Embed(title="Du hast die maximale Anzahl an Spielern in deiner Party erreicht!",
-                                          description="( Werfe einen Spieler aus der Party um neue einzuladen! )",
-                                          color=0xFF0000)
-                    embed.set_thumbnail(
-                        url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                    embed.set_author(name="Party",
-                                     icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed = MyEmbed(name="Party",
+                              title="Du hast die maximale Anzahl an Spielern "
+                              "in deiner Party erreicht!",
+                              description="( Werfe einen Spieler aus der "
+                              "Party um neue einzuladen! )",
+                              color=0xFF0000)
                     await party.partychannel.send(embed=embed, delete_after=7)
 
 
@@ -167,13 +149,11 @@ async def party(ctx: commands.Context, *args):
             print("rightchannel")
             if party.owner == ctx.author:
                 print("owner")
-                embed = discord.Embed(title=ctx.author.name,
-                                      description=ctx.author.name + ", der Owner hat die Party verlassen. Deswegen wird die Party aufgelößt.",
-                                      color=0xFFFF00)
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_author(name="Party",
-                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = MyEmbed(name="Party",
+                     title=ctx.author.name,
+                     description=ctx.author.name + ", der Owner hat die "
+                     "Party verlassen. Deswegen wird die Party aufgelöst.",
+                     color=0xFFFF00)
                 await party.partychannel.send(embed=embed, delete_after=7)
                 await asyncio.sleep(7)
                 #CHANNEL LÖSCHEN
@@ -183,13 +163,10 @@ async def party(ctx: commands.Context, *args):
             else:
                 party.members.remove(ctx.author)
                 await party.partychannel.set_permissions(ctx.author, read_messages=False)
-                embed = discord.Embed(title=ctx.author.name + " hat die Party verlassen",
-                                      description="Bis Bald!",
-                                      color=0x00FF00)
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                embed.set_author(name="Party",
-                                 icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                embed = MyEmbed(name="Party",
+                     title=ctx.author.name + " hat die Party verlassen",
+                     description="Bis Bald!",
+                     color=0x00FF00)
                 await party.partychannel.send(embed=embed, delete_after=7)
 
     #EINEN SPIELER KICKEN
@@ -200,38 +177,31 @@ async def party(ctx: commands.Context, *args):
                 if not member == None and member in party.members:
                     party.members.remove(member)
                     await party.partychannel.set_permissions(member, read_messages=False)
-                    embed = discord.Embed(title=ctx.author.name + " Hat den Spieler " + member.name + " aus der Party gekickt!",
-                                          description="( Es sind nun noch " + str(len(party.members)+1) + " Spieler in der Party! )",
-                                          color=0xFFFF00)
-                    embed.set_thumbnail(
-                        url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                    embed.set_author(name="Party",
-                                     icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed = MyEmbed(name="Party", title=ctx.author.name +
+                          " Hat den Spieler " + member.name +
+                          " aus der Party gekickt!",
+                          description="( Es sind nun noch " + str(len(party.members)+1)
+                          + " Spieler in der Party! )",
+                          color=0xFFFF00)
                     await party.partychannel.send(embed=embed, delete_after=7)
                 else:
-                    embed = discord.Embed(title="Der Spieler " + args[1] + " ist nicht in deiner Party!",
-                                          description="Hat die Party verlassen",
-                                          color=0xFF0000)
-                    embed.set_thumbnail(
-                        url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-                    embed.set_author(name="Party",
-                                     icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+                    embed = MyEmbed(name="Party", title="Der Spieler " +
+                         args[1] + " ist nicht in deiner Party!",
+                         description="Hat die Party verlassen",
+                         color=0xFF0000)
                     await party.partychannel.send(embed=embed, delete_after=7)
 
     #EINEN SPIELER KICKEN
     if len(args) == 1 and args[0].upper() == "LIST":
         if ctx.channel == party.partychannel:
-            embed = discord.Embed(
-                title="Aktuell in der Party ( " + str(len(party.members) + 1) + " )",
+            embed = MyEmbed(name="Party",
+                title="Aktuell in der Party ( " + 
+                    str(len(party.members) + 1) + " )",
                 description=', '.join([member.name for member in party.members]),
                 color=0x00FF00)
             embed.add_field(name="Owner:",
                             value=party.owner.name,
                             inline=False)
-            embed.set_thumbnail(
-                url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-            embed.set_author(name="Party",
-                             icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
             await party.partychannel.send(embed=embed, delete_after=7)
 
 @client.command()
@@ -241,23 +211,16 @@ async def createparty(ctx: commands.Context, *args):
     except discord.Forbidden:
         pass
     if Party.is_in_party(ctx.author):
-        embed = discord.Embed(title=ctx.author.name + ", du bist bereits in einer Party!",
-                              description="( Geh in den Party Channel und schreibe !party leave )",
-                              color=0xFF0000)
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_author(name="Party",
-                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed = MyEmbed(name="Party", title=ctx.author.name + 
+             ", du bist bereits in einer Party!",
+             description="( Geh in den Party Channel und schreibe !party leave )",
+             color=0xFF0000)
         await ctx.channel.send(embed=embed, delete_after=7)
         return
     else:
-        embed = discord.Embed(title="Party erfolgreich erstellt!",
-                              description="",
-                              color=0x00FF00)
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_author(name="Party",
-                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
+        embed = MyEmbed(title="Party erfolgreich erstellt!",
+             description="",
+             color=0x00FF00)
         await ctx.channel.send(embed=embed, delete_after=7)
         Party(ctx.author)
 
