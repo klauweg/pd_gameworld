@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import MissingRequiredArgument, CommandNotFound
+import sys
+import traceback
 
 import logging
 logger = logging.getLogger("myclient")
@@ -24,7 +26,8 @@ async def on_command_error(ctx, error):
             pass
         return
     else:
-        logger.warn( "Unknown Error: " + str(error))
+        logger.warn('Ignoring exception in command "{}":'.format(ctx.command))
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 
 class MyEmbed( discord.Embed ):
