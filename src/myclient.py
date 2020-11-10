@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import MissingRequiredArgument, CommandNotFound
 
 import logging
-loggger = logging.getLogger("myclient")
+logger = logging.getLogger("myclient")
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix="!", intents=intents)
@@ -24,7 +24,7 @@ async def on_command_error(ctx, error):
             pass
         return
     else:
-        raise error
+        logger.warn( "Unknown Error: " + str(error))
 
 
 class MyEmbed( discord.Embed ):
