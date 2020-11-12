@@ -9,7 +9,7 @@ import random
 from discord.ext import commands
 from myclient import client
 
-from GameAPI.user_extension import *
+from Gadgets.user_extension import *
 
 @client.command()
 async def pets(ctx: commands.Context, *args):

@@ -8,9 +8,9 @@ import discord
 from PIL import Image
 import io
 
-# User Modules:
+################# User Modules:
 from myclient import client
-from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
+from Gadgets.user_extension import add_xp, add_to_stats, deposit_money
 
 class Game(commands.Cog):
     def __del__(self):

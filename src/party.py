@@ -2,11 +2,11 @@ import logging
 logger = logging.getLogger("party")
 
 import asyncio
-
 import discord
 from discord.ext import commands
-from myclient import client, MyEmbed
 
+### User Modules
+from myclient import client, MyEmbed
 import Games.tictactoe as tictactoe
 import Games.connectfour as connectfour
 

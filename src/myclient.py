@@ -1,11 +1,11 @@
+import logging
+logger = logging.getLogger("myclient")
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import MissingRequiredArgument, CommandNotFound
 import sys
 import traceback
-
-import logging
-logger = logging.getLogger("myclient")
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix="!", intents=intents)

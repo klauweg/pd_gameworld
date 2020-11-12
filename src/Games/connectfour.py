@@ -5,17 +5,15 @@ import asyncio
 import io
 import logging
 from itertools import chain
-
 from discord.ext import commands
 import discord
-
 import numpy as np
 from parse import parse
 from PIL import Image
 
 # User Modules:
 from myclient import client
-from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
+from Gadgets.user_extension import add_xp, add_to_stats, deposit_money
 
 class Game(commands.Cog):
     def __init__(self, channel, player1, player2):

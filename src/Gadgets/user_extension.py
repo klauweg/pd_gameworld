@@ -3,18 +3,14 @@ logger = logging.getLogger("user_ext")
 
 import math
 import traceback
-
 import asyncio
-
 import discord
-
 import pickle
 from collections import defaultdict
-
 import time
 
 #########################
-from GameAPI.Pet import Pet
+from Gadgets.Pet import Pet
 
 file_path = "../resources/player_data.pickle"
 
