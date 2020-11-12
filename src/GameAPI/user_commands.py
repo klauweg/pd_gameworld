@@ -1,6 +1,6 @@
 import logging
 
-from GameAPI.party.Party import Party
+from party import Party
 
 logger = logging.getLogger("user_cmd")
 

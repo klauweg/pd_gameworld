@@ -2,8 +2,6 @@ import discord
 import asyncio
 from discord.ext import commands
 
-from GameAPI.PlayerDataApi import Utils
-
 from GameAPI.user_extension import *
 
 from myclient import client

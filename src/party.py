@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from myclient import client, MyEmbed
 
-import GameAPI.party.newtictactoe as newtictactoe
+import Games.tictactoe as tictactoe
 
 partys = {}
 
@@ -49,7 +49,7 @@ class PartyCog( commands.Cog ):
         party = partys.get( ctx.channel, None )
         if not party:
             return # Der Channel hat keine Party
-        newtictactoe.Game( party.partychannel, ctx.author, ctx.author )
+        tictactoe.Game( party.partychannel, ctx.author, ctx.author )
         
     # Party CREATE
     @party.command()

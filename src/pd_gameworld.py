@@ -2,14 +2,17 @@ import logging
 logging.basicConfig( level=logging.INFO )
 logger = logging.getLogger("main")
 
-from myclient import client
+import sys
+logger.info( "Module search path: " + str(sys.path) )
 
 import discord
 from discord.ext import commands
 
+# User Modules:
+from myclient import client
+
 import GameAPI.user_commands
 from GameAPI.Book import Book
-import GameAPI.Queue
 import bugreport
 import MoneyMiner.miner_commands
 
