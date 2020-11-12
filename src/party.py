@@ -45,6 +45,7 @@ class PartyCog( commands.Cog ):
         if ctx.invoked_subcommand is None:
             await ctx.send("Invalid party command...")
 
+    # Start eines Spiels:
     @party.command()
     async def play(self, ctx, *args):
         party = partys.get( ctx.channel, None )
@@ -52,11 +53,11 @@ class PartyCog( commands.Cog ):
             return # Der Channel ist keine Party
         gamename = args[0]
         logger.info("Trying to start: "+str(gamename))
-        if gamename == "tictactoe":
+        if gamename in "tictactoe":
             tictactoe.Game( party.partychannel, ctx.author, ctx.author )
-        elif gamename == "connectfour":
+        elif gamename in "connectfour":
             connectfour.Game( party.partychannel, ctx.author, ctx.author )
-        
+
     # Party CREATE
     @party.command()
     async def create(self, ctx, *args):
