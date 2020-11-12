@@ -8,6 +8,7 @@ from discord.ext import commands
 from myclient import client, MyEmbed
 
 import Games.tictactoe as tictactoe
+import Games.connectfour as connectfour
 
 partys = {}
 
@@ -45,11 +46,16 @@ class PartyCog( commands.Cog ):
             await ctx.send("Invalid party command...")
 
     @party.command()
-    async def test(self, ctx, *args):
+    async def play(self, ctx, *args):
         party = partys.get( ctx.channel, None )
         if not party:
-            return # Der Channel hat keine Party
-        tictactoe.Game( party.partychannel, ctx.author, ctx.author )
+            return # Der Channel ist keine Party
+        gamename = args[0]
+        logger.info("Trying to start: "+str(gamename))
+        if gamename == "tictactoe":
+            tictactoe.Game( party.partychannel, ctx.author, ctx.author )
+        elif gamename == "connectfour":
+            connectfour.Game( party.partychannel, ctx.author, ctx.author )
         
     # Party CREATE
     @party.command()

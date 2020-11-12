@@ -1,49 +1,27 @@
+import logging
+logger = logging.getLogger("connectfour")
+
 import asyncio
 import io
 import logging
 from itertools import chain
 
+from discord.ext import commands
+import discord
+
 import numpy as np
 from parse import parse
 from PIL import Image
 
-from GameAPI.Book import Book
-from GameAPI.PlayerDataApi import Utils
-from discord.ext import commands
-import discord
-
+# User Modules:
+from myclient import client
 from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
 
-channel_prefix = "🔴🔵viergewinnt-"
-
-
-class GameControl():
-    def __init__(self, queue):
-        self.queue = queue
-        # check_for_gamestart action in der queue registrieren:
-        self.queue.on_queue_change = self.check_for_gamestart
-
-    # Spiel erzeugen wenn genug Spieler in der Queue:
-    def check_for_gamestart(self):
-        if self.queue.len() >= 2:
-            # ctx objekte aus der queue holen:
-            player_contexts = [self.queue.pop(), self.queue.pop()]
-            # Das eigentliche Spiel mit zwei Spielern starten und registrieren:
-            Game(player_contexts, self.queue)
-
-
-#######################################################################################################
-
 class Game(commands.Cog):
-    def __init__(self, contexts, queue):
-        self.players = [ctx.author for ctx in contexts]  # Extract Players
-        self.bot = contexts[0].bot
-        self.guild = contexts[0].guild
-        self.joinchannel = contexts[0].channel
-        
-        self.queue = queue # queue wird gebraucht um Spieler nach Ende zu "releasen"
+    def __init__(self, channel, player1, player2):
+        self.gamechannel = channel
+        self.players = [ player1, player2 ]
 
-        self.gamechannel = None  # Wird erst in prepare_game() erzeugt!
         self.gamefield = None
         self.gamefield_message = None
 
@@ -55,32 +33,9 @@ class Game(commands.Cog):
 
         self.running = True
         self.turnevent = asyncio.Event()
-        self.bot.loop.create_task(self.gametask())
+        client.loop.create_task(self.gametask())
 
     async def gametask(self):
-        # Suche ersten freien Channelslot
-        cparse = lambda channel: parse( channel_prefix+"{:d}", channel.name ) # Parsefunktion für die Channelnames
-        snums = sorted( [ cparse(c)[0] for c in self.bot.get_all_channels() if cparse(c) ] ) # extract
-        next_channel = next( (x[0] for x in enumerate(snums) if x[0]+1 != x[1]), len(snums) ) + 1 #search gap
-        # Spielchannel erzeugen:
-        self.gamechannel = await self.guild.create_text_channel(
-            name=channel_prefix + str(next_channel),
-            category=self.bot.get_channel(742406887567392878))
-
-        # Nachricht im Joinchannel:
-        embed = discord.Embed(title="Spiel startet!",
-                              description="Es wird gespielt in: **" + self.gamechannel.name + "** !",
-                              color=0x2dff32)
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.set_author(name="VierGewinnt",
-                         icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
-        embed.add_field(name="Spieler",
-                        value=f"""{self.players[0].name} vs. {self.players[1].name}""",
-                        inline=True)
-        embed.set_footer(text="Viel Spaß!")
-        await self.joinchannel.send(embed=embed, delete_after=10)
-
         embed = discord.Embed(title="Also, " + self.players[self.nextplayer].display_name + " bitte beginne!",description="",color=0x58ff46)
         embed.set_author(name="VierGewinnt",icon_url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
         embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/742032003125346344/e4f214ec6871417509f6dbdb1d8bee4a.png?size=256")
@@ -94,7 +49,7 @@ class Game(commands.Cog):
             await self.send_gamefield()
 
         # COG aktivieren:
-        self.bot.add_cog(self)
+        client.add_cog(self)
 
         # Wir warten auf Spielzüge:
         while self.running:
@@ -109,20 +64,18 @@ class Game(commands.Cog):
                 break;
 
         # Spiel beenden:
-        await asyncio.sleep(5)
-        await self.gamechannel.delete()
         for player in self.players:
             add_to_stats(player, "VierGewinnt", 0, 1, 0)
             add_xp(player, 5)
-            self.queue.release_player(player.id)
-        self.bot.remove_cog(self)
+        await asyncio.sleep(5)
+        client.remove_cog(self)
 
 
     # Nachrichten im Spielchannel werden gleich wieder gelöscht:
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if (self.gamechannel == message.channel  # Unser Channel?
-                and self.bot.user != message.author):  # Nachricht nicht vom Bot?
+                and client.user != message.author):  # Nachricht nicht vom Bot?
             try:
                 await message.delete()  # Dann löschen wir die Nachricht
             except:
@@ -131,7 +84,7 @@ class Game(commands.Cog):
     # Action bei drücken eines Reaction-Buttons: (Spielzug)
     @commands.Cog.listener()
     async def on_reaction_add(self, payload: discord.Reaction, member):
-        if payload.message.id == self.gamefield_message.id and member.id is not self.bot.user.id:
+        if payload.message.id == self.gamefield_message.id and member.id is not client.user.id:
             try: # Die Nachricht könnte zwischenzeitlich gelöscht worden sein
                 await payload.message.remove_reaction(payload.emoji, member)  # remove add
             except:

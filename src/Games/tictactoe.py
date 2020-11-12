@@ -2,16 +2,14 @@ import logging
 logger = logging.getLogger("tictactoe")
 
 import asyncio
-
-from myclient import client
-
 from discord.ext import commands
 from parse import parse
-
 import discord
 from PIL import Image
 import io
 
+# User Modules:
+from myclient import client
 from GameAPI.user_extension import add_xp, add_to_stats, deposit_money
 
 class Game(commands.Cog):
