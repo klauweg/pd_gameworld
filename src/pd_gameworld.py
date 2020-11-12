@@ -9,6 +9,7 @@ logger.info( "Module search path: " + str(sys.path) )
 
 # ############### User Modules:
 from myclient import client
+import Gadgets.user_commands
 from Gadgets.Book import Book
 
 client.remove_command("help")
