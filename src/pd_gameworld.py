@@ -1,6 +1,13 @@
 import logging
-logging.basicConfig( level=logging.INFO )
-logger = logging.getLogger("main")
+logger = logging.getLogger()
+my_formatter = logging.Formatter('%(asctime)s %(name)-6.6s:%(levelname)4.4s %(message)s',
+                                 datefmt="%Y-%m-%d %H:%M:%S")
+handler = logging.StreamHandler()
+#handler = logging.FileHandler( "/tmp/netcontrol.log" )
+handler.setFormatter( my_formatter )
+logger.addHandler( handler )
+logger.setLevel( logging.INFO )
+
 
 import discord
 from discord.ext import commands
