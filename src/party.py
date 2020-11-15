@@ -54,7 +54,7 @@ class PartyCog( commands.Cog ):
         gamename = args[0]
         logger.info("Trying to start: "+str(gamename))
         if gamename in "tictactoe":
-            tictactoe.Game( party.partychannel, ctx.author, ctx.author )
+            tictactoe.Game( client, party.partychannel, [ ctx.author, ctx.author ] )
         elif gamename in "connectfour":
             connectfour.Game( party.partychannel, ctx.author, ctx.author )
 
@@ -85,7 +85,7 @@ class PartyCog( commands.Cog ):
            description="",
            color=0x00FF00)
         await ctx.channel.send(embed=embed, delete_after=7)
-        logger.info("Party Created")
+        logger.info("Party Created by {}.".format( ctx.author.name ))
 
     # INVITE to Party
     @party.command()

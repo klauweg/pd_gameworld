@@ -79,3 +79,4 @@ async def on_ready():
 with open("../resources/privates.txt") as token_file:
     token = token_file.readline()
 client.run(token)
+
