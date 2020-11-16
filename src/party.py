@@ -4,6 +4,7 @@ logger = logging.getLogger("party")
 import asyncio
 import discord
 from discord.ext import commands
+import weakref
 
 ### User Modules
 from myclient import client, MyEmbed

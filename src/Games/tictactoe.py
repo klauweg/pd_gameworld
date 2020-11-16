@@ -10,7 +10,7 @@ import io, random, asyncio
 
 ################# User Modules:
 from Gadgets.user_extension import add_xp, add_to_stats, deposit_money
-from myclient import MyEmbed
+from myclient import client, MyEmbed
 
 fieldmap={ "A1":0, "B1":1, "C1":2,
            "A2":3, "B2":4, "C2":5,
@@ -20,8 +20,7 @@ class Game():
     def __del__(self): # for debug only
         logger.info("Game Object has been destroyed.")
         
-    def __init__(self, bot, channel, players):
-        self.bot = bot
+    def __init__(self, channel, players):
         self.gamechannel = channel
         # 1. und zufälligen weiteren Player auswählen:
         self.players = players[0], random.choice( players[1:] )
@@ -31,9 +30,9 @@ class Game():
         self.playfield = 9*[None]
         self.playfield_message = None
         
-        self.bot.add_listener(self.on_message)
         self.trigger = asyncio.Event()
         self.lock = asyncio.Lock()
+        client.add_listener(self.on_message)
         self.game_task = asyncio.create_task( self.game() )
         logger.info("Game has been started.")
 
@@ -44,14 +43,14 @@ class Game():
             add_to_stats(player, "TicTacToe", 0, 1, 0)
             add_xp(player, 5)
         self.game_task.cancel()
-        self.bot.remove_listener(self.on_message)
+        client.remove_listener(self.on_message)
         
         
     # MSG dispatcher (hier ist auch die eigentliche Spiellogik)
     async def on_message(self, message):
         if message.channel.id != self.gamechannel.id:
             return # Die Nachricht war nicht aus unserem Channel
-        if message.author.id == self.bot.user.id:
+        if message.author.id == client.user.id:
             return # Nachrichten vom BOT werden ignoriert
 
         await message.delete() # Nachricht im discord Channel löschen
