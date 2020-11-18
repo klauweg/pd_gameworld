@@ -18,11 +18,13 @@ class Party():
         self.partychannel = channel
         self.owner = owner
         self.members = []
-        self.playing = False
+        self.running_game = lambda : None # simulate dead weakref
         self.invite_messages = []
 
     def __del__(self):
-        logger.info("Party of {} deleted.".format( self.owner.name ) )
+        if self.running_game() != None:
+            self.running_game().endgame()
+        logger.info("Party of {} destroyed.".format( self.owner.name ) )
         
                 
 ##############################################################################
@@ -52,13 +54,36 @@ class PartyCog( commands.Cog ):
         party = partys.get( ctx.channel, None )
         if not party:
             return # Der Channel ist keine Party
+        if party.running_game() != None:
+            logger.info("Es ist schon ein Spiel gestartet!")
+            return
         gamename = args[0]
         logger.info("Trying to start: "+str(gamename))
         if gamename in "tictactoe":
-            tictactoe.Game( client, party.partychannel, [ ctx.author, ctx.author ] )
+            game = tictactoe.Game( party.partychannel, [ ctx.author ] + party.members )
         elif gamename in "connectfour":
-            connectfour.Game( party.partychannel, ctx.author, ctx.author )
-
+            game = connectfour.Game( party.partychannel, [ ctx.author ] + party.members )
+        party.running_game = weakref.ref( game )
+        
+        
+    # Debug game ( spielt gegen sich selber ):
+    @party.command()
+    async def debug(self, ctx, *args):
+        party = partys.get( ctx.channel, None )
+        if not party:
+            return # Der Channel ist keine Party
+        if party.running_game() != None:
+            logger.info("Es ist schon ein Spiel gestartet!")
+            return
+        gamename = args[0]
+        logger.info("Trying to start with debug: "+str(gamename))
+        if gamename in "tictactoe":
+            game = tictactoe.Game( party.partychannel, [ ctx.author, ctx.author ] )
+        elif gamename in "connectfour":
+            game = connectfour.Game( party.partychannel, [ ctx.author, ctx.author ] )
+        party.running_game = weakref.ref( game )
+        
+        
     # Party CREATE
     @party.command()
     async def create(self, ctx, *args):
@@ -151,9 +176,9 @@ class PartyCog( commands.Cog ):
                title=ctx.author.name,
                description=ctx.author.name + ", der Owner hat die "
                "Party verlassen. Deswegen wird die Party aufgelöst.",
-               color=0xFFFF00)
-            await ctx.channel.send(embed=embed, delete_after=7)
-            await asyncio.sleep(7)
+               color=0xFF0000)
+            await ctx.channel.send(embed=embed, delete_after=15)
+            await asyncio.sleep(15)
             #CHANNEL LÖSCHEN
             partys.pop( ctx.channel ) # Referenz löschen -> GC
             await ctx.channel.delete()
@@ -163,7 +188,7 @@ class PartyCog( commands.Cog ):
             embed = MyEmbed(name="Party",
               title=ctx.author.name + " hat die Party verlassen",
               description="Bis Bald!",
-              color=0x00FF00)
+              color=0xFF0000)
             await party.partychannel.send(embed=embed, delete_after=7)
 
     #EINEN SPIELER KICKEN
@@ -187,8 +212,7 @@ class PartyCog( commands.Cog ):
             await party.partychannel.send(embed=embed, delete_after=7)
         else:
             embed = MyEmbed(name="Party", title="Der Spieler " +
-                args[1] + " ist nicht in deiner Party!",
-                description="Hat die Party verlassen",
+                args[0] + " ist nicht in deiner Party!",
                 color=0xFF0000)
             await party.partychannel.send(embed=embed, delete_after=7)
 

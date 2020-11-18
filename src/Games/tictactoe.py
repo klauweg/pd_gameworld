@@ -16,6 +16,11 @@ fieldmap={ "A1":0, "B1":1, "C1":2,
            "A2":3, "B2":4, "C2":5,
            "A3":6, "B3":7, "C3":8 }
 
+# Spielklasse
+# Der erste Spieler in den <players> ist üblicherweise der owner
+# Dieser Spieler wird immer ausgewählt. Falls mehr als ein weiterer
+# Spieler übergeben wird, so wird aus diesen der zweite Spieler
+# zufällig gewählt.
 class Game():
     def __del__(self): # for debug only
         logger.info("Game Object has been destroyed.")
@@ -53,8 +58,15 @@ class Game():
         if message.author.id == client.user.id:
             return # Nachrichten vom BOT werden ignoriert
 
-        await message.delete() # Nachricht im discord Channel löschen
-
+        # Solange das Spiel läuft, werden alle Nachrichten im Channel
+        # wieder gelöscht. Da der on_message() handler aber auch ausgelöst
+        # wird, wenn Befehle an das Party-Objekt gesendet werden, dieses seine
+        # Messages aber schon selbst löscht, könnte das hier fehlschlagen:
+        try:
+            await message.delete() # Nachricht im discord Channel löschen
+        except discord.errors.NotFound:
+            pass
+        
         async with self.lock: # Immer nur eine Msg gleichzeitig
             self.trigger.set() # prevent timeout
             # Leave Befehl:
@@ -66,7 +78,7 @@ class Game():
                 self.endgame()
                 return # Ein spieler hat das Spiel verlassen
 
-            # richtiger Spieler?
+            # Welcher Spieler?
             if message.author.id != self.players[self.currentPlayer].id:
                 return # Falscher Spieler
 
