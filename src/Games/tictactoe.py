@@ -40,26 +40,32 @@ class Game():
             add_to_stats(player, "TicTacToe", 0, 1, 0)
             add_xp(player, 5)
         client.remove_listener(self.on_message)
+        logger.info("Before Task Cancel")
         self.game_task.cancel()
+        logger.info("After Task Cancel")
+        # Hier muss irgend ein await stehen, damit sich der Task
+        # noch selbst canceln kann:
+        await asyncio.sleep(1)
+        logger.error("This shouldn't never ever happen!")
         
-    # MSG receiver:
+    # MSG handler:
     async def on_message(self, message):
         if message.channel.id != self.gamechannel.id:
             return # Die Nachricht war nicht aus unserem Channel
         if message.author.id == client.user.id:
             return # Nachrichten vom BOT werden ignoriert
         # Nachrichten in die Queue zum Game Task schreiben:
-        self.queue.put( message )
+        await self.queue.put( message )
         
         
     # Eigentlicher Game Task:
     async def game( self ):
         # Genug Spieler?
-        if self.players.len() < 2:
+        if len(self.players) < 2:
             await self.msg_tooFewPlayers()
             await self.destroygame()
         # Spieler auswählen:
-        self.players = self.players[0], random.choice( self.players[1:] )
+        self.players = [ self.players[0], random.choice( self.players[1:] ) ]
         self.currentPlayer = random.choice( (0,1) )
         # Spielfeld vorbereiten:
         self.playfield = 9*[None]
@@ -83,6 +89,7 @@ class Game():
                     self.players.remove( message.author )
                     await self.destroygame() #EXIT
 
+            # Gültige Spielfeldpositionseingabe?
             id = fieldmap.get( message.content.upper() )
             if id != None:
                 await message.delete()
@@ -101,16 +108,16 @@ class Game():
                 result = self.compute_winner()
                 
                 if result == True: # Einer hat gewonnen
-                    await msg_won( self.players[self.currentPlayer].name )
+                    await self.msg_won( self.players[self.currentPlayer].name )
                     add_xp(self.players[self.currentPlayer], 20)
                     add_to_stats(self.players[self.currentPlayer], "TicTacToe", 1, 0, 0)
                     deposit_money(self.players[self.currentPlayer], 10)
-                    self.destroygame()
+                    await self.destroygame()
                 elif result == "pat": # Unentschieden
-                    await msg_pat()
+                    await self.msg_pat()
                     for player in self.players:
                         add_to_stats(player, "TicTacToe", 0, 0, 1)
-                    self.destroygame()
+                    await self.destroygame()
                 else: # Geht noch weiter, Spieler wechseln
                     self.currentPlayer = 0 if self.currentPlayer == 1 else 1
 
@@ -159,18 +166,18 @@ class Game():
             title="Das Spiel wird beendet, weil " +
                     name + " keine Lust mehr hat.",
             colour=discord.Colour.green())
-        await self.gamechannel.send(embed=embed, delete_after=7)
+        await self.gamechannel.send(embed=embed)
         
     async def msg_timeout(self):
         embed = discord.Embed(title="Game Gestoppt:",
            description="(Timeout)", color=0x58ff46)
-           embed.set_author(name="TicTacToe")
+        embed.set_author(name="TicTacToe")
         await self.gamechannel.send(embed=embed, delete_after=7)
 
     async def msg_tooFewPlayers(self):
         embed = MyEmbed(name="TicTacToe Game",
            title="Fehler",
-           description="Das Spiel braucht mindestens zwei Spieler"
+           description="Das Spiel braucht mindestens zwei Spieler "
              "oder mehr aus denen dann zufällig gewählt wird.",
            color=0xFF0000)
         await self.gamechannel.send(embed=embed, delete_after=10)            
